@@ -7,8 +7,11 @@ Gem::Specification.new do |s|
   s.email             = "phenomer@g.hachune.net"
   s.homepage          = "http://bitbucket.org/phenomer/ruby-ao"
   s.has_rdoc          = true
+  s.rdoc_options      = "--main README.rdoc"
   s.files             = ["LICENSE", "README.rdoc", "CHANGELOG.rdoc", 
                          "ext/cao.c", "ext/extconf.rb", "lib/ao.rb"]
+  s.extra_rdoc_files  = ["README.rdoc", "CHANGELOG.rdoc", "ext/cao.c",
+                         "example/drivers.rb", "example/rawplay.rb"]
   s.extensions        = ["ext/extconf.rb"]
   s.require_paths     = ["lib"]
   s.required_ruby_version = Gem::Requirement.new(">=1.9.1")
