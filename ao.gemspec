@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.homepage          = "http://bitbucket.org/phenomer/ruby-ao"
   s.has_rdoc          = true
   s.files             = ["LICENSE", "README.rdoc", "CHANGELOG.rdoc", 
-                         "ext/ao.c", "ext/extconf.rb", "lib/rao.rb"]
+                         "ext/cao.c", "ext/extconf.rb", "lib/ao.rb"]
   s.extensions        = ["ext/extconf.rb"]
   s.require_paths     = ["lib"]
   s.required_ruby_version = Gem::Requirement.new(">=1.9.1")
