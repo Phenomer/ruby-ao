@@ -1,0 +1,44 @@
+= Ruby-AO(libao Ruby Interface)
+
+* http://bitbucket.org/phenomer/ruby-ao
+
+== 概要
+ruby-aoは、シンプルでクロスプラットフォームなオーディオ出力ライブラリ
+であるlibaoのrubyインターフェースです。
+
+* libao http://xiph.org/ao/
+
+
+== インストール
+=== libaoのインストール
+ruby-aoをビルド&インストールして利用するにはlibaoが必要です。
+Linuxディストリビューション等ではそれぞれ以下のパッケージが必要になり
+ます。
+[Arch Linux] libao
+[Debian/Ubuntu] libao-dev
+[Redhat] libao-devel
+[FreeBSD, NetBSD, OpenBSD, DragonFlyBSD] audio/libao
+
+Windows用のバイナリはxiph.orgにあります。
+http://xiph.org/downloads/
+
+=== ruby-aoのインストール
+ruby-aoはgemコマンドを用いてインストールできます。
+
+  gem install ao
+
+もしlibaoが標準的なパスにインストールされていない場合は、以下のように
+ディレクトリを指定してしてgemコマンドを実行してください。
+
+  gem install ao  -- --with-ao-include=/usr/miku/include \
+    --with-ao-lib=/usr/miku/lib
+
+== 例
+=== RAWファイルを再生
+  :include: example/rawplay.rb
+
+=== デフォルトのドライバと利用可能なドライバ一覧を表示
+  :include: example/drivers.rb
+
+== ライセンス
+GPLv2

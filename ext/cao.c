@@ -8,7 +8,6 @@
 #include<ao/plugin.h>
 
 static VALUE cAO;
-static VALUE cAO_Format;
 static VALUE cAO_eAOError;
 static VALUE cAO_eNoDriver;
 static VALUE cAO_eNotFile;
@@ -22,7 +21,7 @@ static VALUE cAO_eBadFormat;
 static VALUE cAO_eUnknownError;
 
 typedef struct dev_list {
-  int              id;
+  int               id;
   ao_device        *device;
   ao_sample_format *format;
   ao_option        *option;
@@ -113,28 +112,29 @@ remove_device(int id)
 /*
   全てのデバイスを閉じリストから削除する。
 */
-VALUE
-rao_close_all_device()
-{
-  dev_list *current = devices;
-  dev_list *behind  = NULL;
-  int result;
+/* VALUE */
+/* rao_close_all_device() */
+/* { */
+/*   dev_list *current = devices; */
+/*   dev_list *behind  = NULL; */
+/*   int result; */
 
-  while (current != NULL){
-    behind  = current;
-    current = current->next;
-    result = ao_close(behind->device);
-    if (result == 0){
-      fprintf(stderr,
-	      "Indicates an error while the device was being closed.");
-    }
-    free(behind->format);
-    ao_free_options(behind->option);
-    free(behind);
-  }
+/*   while (current != NULL){ */
+/*     behind  = current; */
+/*     current = current->next; */
+/*     result = ao_close(behind->device); */
+/*     if (result == 0){ */
+/*       fprintf(stderr, */
+/* 	      "Indicates an error while the device was being closed."); */
+/*     } */
+/*     free(behind->format); */
+/*     ao_free_options(behind->option); */
+/*     free(behind); */
+/*   } */
   
-  return Qtrue;
-}
+/*   return Qtrue; */
+/* } */
+
 
 /*
   引数に設定されたサンプルフォーマットをao_sample_format構造体に設定する。
@@ -209,6 +209,9 @@ set_option(VALUE a_options)
   return option;
 }
 
+/*
+  ao_info構造体をRubyの配列に変換し返す。
+*/
 static VALUE
 ao_info2array(ao_info *info)
 {
@@ -285,18 +288,32 @@ ao_info2array(ao_info *info)
 /* void ao_initialize(void); */
 /* void ao_shutdown(void); */
 
+/*
+  call-seq: AO.new
+
+  libaoを初期化する。これを実行してからshutdownを実行するまでの間のみ
+  CAOクラスのメソッドを利用できる。
+ */
 static VALUE
 rao_initialize(VALUE obj)
 {
   ao_initialize();
-  return Qtrue;
+  return Qnil;
 }
 
+/*
+  call-seq: ao.shutdown
+
+  libaoを終了する。shutdownの前に開いている全てのデバイスを
+  closeしておかなければならない。
+  
+  [return] nil
+ */
 static VALUE
 rao_shutdown(VALUE obj)
 {
   ao_shutdown();
-  return Qtrue;
+  return Qnil;
 }
 
 /* device setup/playback/teardown */
@@ -319,6 +336,19 @@ rao_shutdown(VALUE obj)
 /*                               char *output_samples, */
 /*                               uint_32 num_bytes); */
 /* int                  ao_close(ao_device *device); */
+
+/*
+  call-seq: ao.append_global_option(key, value)
+
+  libao全体で参照されるオプションを設定する。
+  オプションはKey-Value形式で設定する。
+  各ドライバ毎のオプションについては下記を参照。
+  http://xiph.org/ao/doc/drivers.html
+
+  [param1] key(String)
+  [param2] value(String)
+  [return] true
+ */
 static VALUE
 rao_append_global_option(VALUE obj,
 			 VALUE key, VALUE value)
@@ -334,6 +364,24 @@ rao_append_global_option(VALUE obj,
   return Qtrue;
 }
 
+/*
+  call-seq: ao.open_live(driver_id, bits, rate, channels, byte_format, matrix, options)
+
+  LiveDeviceを開く。引数に指定するmatrixとoptionについては以下を参照。
+  [matrix] http://xiph.org/ao/doc/ao_sample_format.html
+  [option] http://xiph.org/ao/doc/drivers.html
+  optionはKey-Valueを要素に含む多次元配列を設定する。
+  特に設定が必要なければnilで構わない。
+  ex) ALSAドライバのデバイスをhw:1に設定する場合は [["dev", "hw:1"]] を渡す。
+
+  [param1] DriverID
+  [param2] bits(Fixnum)
+  [param3] rate(Fixnum)
+  [param4] channels(fixnum)
+  [param5] byte_format(fixnum)
+  [param6] matrix(String or nil)
+  [param7] option(Array or nil)
+*/
 static VALUE
 rao_open_live(VALUE obj,      VALUE driver_id,
 	      VALUE bits, VALUE rate, VALUE channels,
@@ -390,6 +438,26 @@ rao_open_live(VALUE obj,      VALUE driver_id,
   return INT2FIX(id);
 }
 
+/*
+  call-seq: ao.open_file(driver_id, filepath, overwrite, bits, rate, channels, byte_format, matrix, options)
+
+  Fileを開く。引数に指定するmatrixとoptionについては以下を参照。
+  [matrix] http://xiph.org/ao/doc/ao_sample_format.html
+  [option] http://xiph.org/ao/doc/drivers.html
+  optionはKey-Valueを要素に含む多次元配列を設定する。
+  特に設定が必要なければnilで構わない。
+  ex) RAWドライバの出力エンディアンをビッグエンディアンに設定する場合は [["byteirder", "big"]] を渡す。
+
+  [param1] DriverID
+  [param2] filepath(String)
+  [param3] overwrite?(true or false)
+  [param4] bits(Fixnum)
+  [param5] rate(Fixnum)
+  [param6] channels(fixnum)
+  [param7] byte_format(fixnum)
+  [param8] matrix(String or nil)
+  [param9] option(Array or nil)
+*/
 static VALUE
 rao_open_file(VALUE obj,      VALUE driver_id,
 	      VALUE filename, VALUE overwrite,
@@ -457,6 +525,17 @@ rao_open_file(VALUE obj,      VALUE driver_id,
   return INT2FIX(id);
 }
 
+/*
+  call-seq: ao.play(device_id, output_samples)
+
+  受け取ったサンプルを再生する。
+  (デバイスがファイル出力の場合はファイルに書き出す)
+  一度に渡せる量はunsigned int(32bit)の範囲まで。
+
+  [param1] DeviceID
+  [param2] buffer(String)
+  [return] Fixnum
+*/
 static VALUE
 rao_play(VALUE obj,            VALUE device_id,
 	 VALUE output_samples)
@@ -466,35 +545,63 @@ rao_play(VALUE obj,            VALUE device_id,
   uint32_t   bytes;
 
   Check_Type(output_samples, T_STRING);
-  /*Check_Type(bytes, T_FIXNUM);*/
   Check_Type(device_id, T_FIXNUM);
   bytes = RSTRING_LENINT(output_samples);
   if ((dev = search_device(FIX2INT(device_id))) == NULL){
     rb_raise(cAO_eDeviceError, "Cannot find device from device ID.");
   }
   result = ao_play(dev, StringValuePtr(output_samples), bytes);
-  /*result = ao_play(dev, StringValuePtr(output_samples), FIX2UINT(bytes));*/
   if (result == 0){
     rb_raise(cAO_eDeviceError, "Device should be closed.");
   }
   return INT2FIX(result);
 }
 
+/*
+  call-seq: ao.close(device_id)
+
+  デバイスを閉じる。
+  [param1] DeviceID
+  [return] true
+*/
 static VALUE
 rao_close(VALUE obj, VALUE device_id)
 {
   ao_device *dev;
   int result;
+  int devid = FIX2INT(device_id);
   Check_Type(device_id, T_FIXNUM);
-  if ((dev = search_device(FIX2INT(device_id))) == NULL){
+  if ((dev = search_device(devid)) == NULL){
     rb_raise(cAO_eDeviceError, "Cannot find device from device ID.");
   }
   result = ao_close(dev);
+  remove_device(devid);
   if (result == 0){
     rb_raise(cAO_eDeviceError,
 	     "Indicates an error while the device was being closed.");
   }
   return Qtrue;
+}
+
+/*
+  call-seq: ao.closed?(device_id)
+
+  デバイスが閉じられているか否かを調査する。
+  閉じられている場合true, 閉じられていない場合falseを返す。
+  
+  [param1] DeviceID
+  [return] true or false
+*/
+static VALUE
+rao_closed(VALUE obj, VALUE device_id)
+{
+  ao_device *dev;
+  int result;
+  Check_Type(device_id, T_FIXNUM);
+  if ((dev = search_device(FIX2INT(device_id))) == NULL){
+    return Qtrue;
+  }
+  return Qfalse;
 }
 
 /* driver information */
@@ -504,6 +611,15 @@ rao_close(VALUE obj, VALUE device_id)
 /* ao_info **ao_driver_info_list(int *driver_count); */
 /* char       *ao_file_extension(int driver_id); */
 
+/*
+  call-seq: ao.driver_id(short_name)
+
+  short_nameを元にDriverIDを検索する。
+  見つからなかった場合はnilを返す。
+
+  [param1] short_name(String)
+  [return] DriverID or nil
+*/
 static VALUE
 rao_driver_id(VALUE obj, VALUE short_name)
 {
@@ -511,12 +627,19 @@ rao_driver_id(VALUE obj, VALUE short_name)
   Check_Type(short_name, T_STRING);
   driver_id = ao_driver_id(StringValuePtr(short_name));
   if (driver_id < 0){
-    rb_raise(cAO_eNoDriver,
-	     "No driver by that name exists.");
+    return Qnil;
+    /* rb_raise(cAO_eNoDriver, */
+    /* 	     "No driver by that name exists."); */
   }
   return INT2FIX(driver_id);
 }
 
+/*
+  call-seq: ao.default_driver_id
+
+  デフォルトのDriverIDを返す。
+  [return] DriverID
+*/
 static VALUE
 rao_default_driver_id(VALUE obj)
 {
@@ -529,6 +652,18 @@ rao_default_driver_id(VALUE obj)
   return INT2FIX(id);
 }
 
+/*
+  call-seq: ao.driver_info(driver_id)
+
+  ドライバの情報を確認する。
+  ドライバ情報の要素順は以下の通り。
+  [name(String), short_name(String), author(String),
+  comment(String), preferred_byte_format(Fixnum),
+  priority(Fixnum), option_count(Fixnum), options(Array)]
+
+  [param1] DriverID
+  [return] Driver Information(Array)
+*/
 static VALUE
 rao_driver_info(VALUE obj, VALUE driver_id)
 {
@@ -543,6 +678,12 @@ rao_driver_info(VALUE obj, VALUE driver_id)
   return ao_info2array(info);;
 }
 
+/*
+  call-seq: ao.driver_info_list
+
+  システムのlibaoがサポートしているドライバ一覧を配列で返す。
+  [return] ドライバ一覧の配列
+*/
 static VALUE
 rao_driver_info_list(VALUE obj)
 {
@@ -559,6 +700,13 @@ rao_driver_info_list(VALUE obj)
   return iary;
 }
 
+/*
+  call-seq: ao.file_extension(driver_id)
+
+  ファイル出力時の拡張子の標準を確認する。
+  [param1] DriverID
+  [return] ext name(String)
+*/
 static VALUE
 rao_file_extension(VALUE obj, VALUE driver_id)
 {
@@ -575,6 +723,13 @@ rao_file_extension(VALUE obj, VALUE driver_id)
 
 /* miscellaneous */
 /* int          ao_is_big_endian(void); */
+
+/*
+  call-seq: ao.bigendian?
+
+  ホストの環境がビッグエンディアンであるか否かを調査する。
+  [return] ビッグエンディアンであればtrue、リトルエンディアンであればfalse
+*/
 static VALUE
 rao_is_big_endian(VALUE obj)
 {
@@ -586,12 +741,15 @@ rao_is_big_endian(VALUE obj)
 }
 
 
-/* Initialize */
+/*
+  Ruby-AOの基礎となるクラス。通常はこれを直接利用するのではなく、
+  利用しやすい形にしたAOクラスを用いる。
+*/
+
 void
-Init_ao(void)
+Init_cao(void)
 {
-  cAO = rb_define_module("AO");
-  cAO_Format = rb_define_class_under(cAO, "Format", rb_cData);
+  cAO = rb_define_class("CAO", rb_cObject);
 
   /* exceptions */
   cAO_eAOError =
@@ -618,48 +776,37 @@ Init_ao(void)
     rb_define_class_under(cAO, "UnknownError", cAO_eAOError);
 
   /* constants */
-  rb_define_const(cAO, "TYPE_LIVE",
-		  INT2FIX(AO_TYPE_LIVE));
-  rb_define_const(cAO, "TYPE_FILE",
-		  INT2FIX(AO_TYPE_FILE));
-  rb_define_const(cAO, "FMT_LITTLE",
-		  INT2FIX(AO_FMT_LITTLE));
-  rb_define_const(cAO, "FMT_BIG",
-		  INT2FIX(AO_FMT_BIG));
-  rb_define_const(cAO, "FMT_NATIVE",
-		  INT2FIX(AO_FMT_NATIVE));
+  /* ドライバがLive出力用であることを示す。 */
+  rb_define_const(cAO, "TYPE_LIVE",  INT2FIX(AO_TYPE_LIVE));
+  /* ドライバがファイル出力用であることを示す。 */
+  rb_define_const(cAO, "TYPE_FILE",  INT2FIX(AO_TYPE_FILE));
+  /* データのエンディアンがリトルエンディアンであることを示す。 */
+  rb_define_const(cAO, "FMT_LITTLE", INT2FIX(AO_FMT_LITTLE));
+  /* データのエンディアンがビッグエンディアンであることを示す。 */
+  rb_define_const(cAO, "FMT_BIG",    INT2FIX(AO_FMT_BIG));
+  /* データのエンディアンがホストのネイティブ形式であることを示す。 */
+  rb_define_const(cAO, "FMT_NATIVE", INT2FIX(AO_FMT_NATIVE));
 
-  /* library setup/teardown */
-  rb_define_module_function(cAO, "initialize",
-			    rao_initialize, 0);
-  rb_define_module_function(cAO, "shutdown",
-			    rao_shutdown, 0);
+  /* library setup/shutdown */
+  rb_define_private_method(cAO, "initialize", rao_initialize, 0);
+  rb_define_method(cAO, "shutdown",           rao_shutdown, 0);
 
   /* device setup/playback/teardown */
-  rb_define_module_function(cAO, "append_global_option",
-			    rao_append_global_option, 2);
-  rb_define_module_function(cAO, "open_live",
-			    rao_open_live, 7);
-  rb_define_module_function(cAO, "open_file",
-			    rao_open_file, 9);
-  rb_define_module_function(cAO, "play",
-			    rao_play, 2);
-  rb_define_module_function(cAO, "close",
-			    rao_close, 1);
+  rb_define_method(cAO, "append_global_option", rao_append_global_option, 2);
+  rb_define_method(cAO, "open_live",            rao_open_live, 7);
+  rb_define_method(cAO, "open_file",            rao_open_file, 9);
+  rb_define_method(cAO, "play",                 rao_play, 2);
+  rb_define_method(cAO, "close",                rao_close, 1);
+  /*rb_define_method(cAO, "close_all_device"      rao_close_all_device, 1);*/
+  rb_define_method(cAO, "closed?",              rao_closed, 1);
 
   /* driver information */
-  rb_define_module_function(cAO, "driver_id",
-			    rao_driver_id, 1);
-  rb_define_module_function(cAO, "default_driver_id",
-			    rao_default_driver_id, 0);
-  rb_define_module_function(cAO, "driver_info",
-			    rao_driver_info, 1);
-  rb_define_module_function(cAO, "driver_info_list",
-			    rao_driver_info_list, 0);
-  rb_define_module_function(cAO, "file_extension",
-			    rao_file_extension, 1);
+  rb_define_method(cAO, "driver_id",         rao_driver_id, 1);
+  rb_define_method(cAO, "default_driver_id", rao_default_driver_id, 0);
+  rb_define_method(cAO, "driver_info",       rao_driver_info, 1);
+  rb_define_method(cAO, "driver_info_list",  rao_driver_info_list, 0);
+  rb_define_method(cAO, "file_extension",    rao_file_extension, 1);
 
   /* miscellaneous */
-  rb_define_module_function(cAO, "bigendian?",
-			    rao_is_big_endian, 0);
+  rb_define_method(cAO, "bigendian?", rao_is_big_endian, 0);
 }
