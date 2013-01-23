@@ -651,6 +651,11 @@ void
 Init_cao(void)
 {
   cAO = rb_define_class("CAO", rb_cObject);
+
+  /* 
+     開いたデバイスに関する情報を保持するクラス。
+     ruby側から操作することはできない。
+   */
   cAO_cDevice = rb_define_class_under(cAO, "CDevice", rb_cData);
 
   /* exceptions */
@@ -691,7 +696,7 @@ Init_cao(void)
 
   /* library setup/shutdown */
   rb_define_private_method(cAO, "initialize", rao_initialize, 0);
-  rb_define_method(cAO, "shutdown",           rao_shutdown, 0);
+  rb_define_method(cAO,         "shutdown",   rao_shutdown, 0);
 
   /* device setup/playback/teardown */
   rb_define_method(cAO, "append_global_option", rao_append_global_option, 2);
