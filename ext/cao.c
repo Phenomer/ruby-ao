@@ -8,6 +8,7 @@
 #include<ao/plugin.h>
 
 static VALUE cAO;
+static VALUE cAO_cDevice;
 static VALUE cAO_eAOError;
 static VALUE cAO_eNoDriver;
 static VALUE cAO_eNotFile;
@@ -20,120 +21,113 @@ static VALUE cAO_eFileExists;
 static VALUE cAO_eBadFormat;
 static VALUE cAO_eUnknownError;
 
-typedef struct dev_list {
-  int               id;
+typedef struct dev_data {
   ao_device        *device;
   ao_sample_format *format;
   ao_option        *option;
-  struct dev_list  *next;
-} dev_list;
+  struct dev_data  *next;
+} dev_data;
 
-static dev_list *devices = NULL;
+static dev_data *devices = NULL;
+
+/*
+  devdata構造体の持つデバイスを全て閉じ、
+  またオプションとフォーマットの情報も削除する。
+  メンバ変数にはNULLを設定する。
+  devdata構造体自体は開放しない。
+  (rubyのGCによって実行されるremove_device関数に任せるため)
+ */
+void
+close_device(dev_data *devdat){
+  ao_close(devdat->device);
+  ao_free_options(devdat->option);
+  free(devdat->format);
+  devdat->device = NULL;
+  devdat->option = NULL;
+  devdat->format = NULL;
+}
 
 /*
   デバイス一覧にデバイスを追加する。
-  追加する際、一意なIDを付与し、付与したID(>=0)を返す。
+  追加した構造体へのポインタを返す。
   割当に失敗した場合は-1を返す。
 */
-int
+dev_data *
 append_device(ao_device *dev, ao_sample_format *format,
 	      ao_option *option)
 {
-  int       id      = 0;
-  dev_list *behind  = NULL;
-  dev_list *current = devices;
+  dev_data *behind  = NULL;
+  dev_data *current = devices;
 
   while (current != NULL){
-    id      = current->id + 1;
-    if (id < 0){id = 0;};
     behind  = current;
     current = current->next;
   }
-  if ((current = malloc(sizeof(dev_list))) == NULL){
-    return -1;
-  }
-  current->id     = id;
+  current         = ALLOC(dev_data);
   current->device = dev;
   current->format = format;
   current->option = option;
   current->next   = NULL;
   if (behind != NULL){
-    behind->next    = current;
+    behind->next  = current;
   } else {
     devices = current;
   }
 
-  return id;
-}
-
-/*
-  デバイス一覧からデバイスIDを元にデバイスを検索し返す。
-  デバイスが見つからない場合NULLを返す。
-*/
-ao_device *
-search_device(int id)
-{
-  dev_list  *tmp    = devices;
-  ao_device *result = NULL;
-  while (tmp != NULL){
-    if (tmp->id == id){
-      result = tmp->device;
-      break;
-    }
-    tmp = devices->next;
-  }
-  return result;
+  return current;
 }
 
 /* 
-   デバイス一覧からデバイスIDを元にデバイスを削除する。
-   成功した場合デバイスID(>=0)を、失敗した場合-1を返す。
+   デバイス一覧からdev_data構造体へのポインタを元にデバイスを削除する。
+   この関数はopen_live()とopen_file()にてdev_data構造体をWrapする時に
+   構造体free用関数として渡す(rubyのGCにて呼ばれるよう設定する)
+   Data_Wrap_Struct(cAO_cDevice, 0, remove_device, devdat);
 */
-int
-remove_device(int id)
+void
+remove_device(dev_data *devdat)
 {
-  dev_list *behind  = NULL;
-  dev_list *current = devices;
+  dev_data *behind  = NULL;
+  dev_data *current = devices;
   
-  while (current != NULL){
-    if (current->id == id){
-      if (current->next != NULL && behind != NULL){
-	behind->next = current->next;
-      }
-      free(current->format);
-      ao_free_options(current->option);
-      free(current);
-      return id;
+  fprintf(stderr, "rm - dev: %p, fmt: %p, opt: %p\n", 
+	  devdat->device,
+	  devdat->format,
+	  devdat->option);
+
+  /* リストの先頭がNULLではなくかつ先頭にマッチした場合 */
+  if (devices != NULL && devices == devdat){
+    close_device(devdat);
+    /* 次のデータが存在している場合、先頭をそのデータに入れ替える
+     存在しない場合先頭をNULLにする */
+    if (devices->next != NULL){
+      devices = devdat->next;
+    } else{
+      devices = NULL;
     }
+    free(devdat);
+    return;
   }
-  return -1;
-}
 
-/*
-  全てのデバイスを閉じリストから削除する。
-*/
-/* VALUE */
-/* rao_close_all_device() */
-/* { */
-/*   dev_list *current = devices; */
-/*   dev_list *behind  = NULL; */
-/*   int result; */
-
-/*   while (current != NULL){ */
-/*     behind  = current; */
-/*     current = current->next; */
-/*     result = ao_close(behind->device); */
-/*     if (result == 0){ */
-/*       fprintf(stderr, */
-/* 	      "Indicates an error while the device was being closed."); */
-/*     } */
-/*     free(behind->format); */
-/*     ao_free_options(behind->option); */
-/*     free(behind); */
-/*   } */
+  /* リスト先頭がマッチしなかった場合 */
+  while (current != NULL){
+    if (current == devdat){
+      /* 削除するデータの次にデータが存在すれば、
+	 それを前のデータのnextに設定する。 */
+      if (devdat->next != NULL){
+	behind->next = devdat->next;
+      }
+      close_device(devdat);
+      free(devdat);
+      return;
+    }
+    behind  = current;
+    current = current->next;
+  }
   
-/*   return Qtrue; */
-/* } */
+  /* バグがなければ到達しない */
+  rb_raise(cAO_eUnknownError, "Fatal GC error.");
+  return;
+}
 
 
 /*
@@ -189,9 +183,6 @@ set_option(VALUE a_options)
       value    = rb_ary_entry(element, 1);
       Check_Type(key,   T_STRING);
       Check_Type(value, T_STRING);
-      printf("%s: %s\n", StringValuePtr(key),
-	     StringValuePtr(value));
-
       result = ao_append_option(&option,
 				StringValuePtr(key),
 				StringValuePtr(value));
@@ -235,59 +226,6 @@ ao_info2array(ao_info *info)
   return iary;
 }
 
-/* #define AO_TYPE_LIVE 1 */
-/* #define AO_TYPE_FILE 2 */
-
-/* #define AO_ENODRIVER   1 */
-/* #define AO_ENOTFILE    2 */
-/* #define AO_ENOTLIVE    3 */
-/* #define AO_EBADOPTION  4 */
-/* #define AO_EOPENDEVICE 5 */
-/* #define AO_EOPENFILE   6 */
-/* #define AO_EFILEEXISTS 7 */
-/* #define AO_EBADFORMAT  8 */
-
-/* #define AO_EFAIL       100 */
-
-/* #define AO_FMT_LITTLE 1 */
-/* #define AO_FMT_BIG    2 */
-/* #define AO_FMT_NATIVE 4 */
-
-/* /\* --- Structures --- *\/ */
-
-/* typedef struct ao_info { */
-/*   int  type; /\* live output or file output? *\/ */
-/*   char *name; /\* full name of driver *\/ */
-/*   char *short_name; /\* short name of driver *\/ */
-/*   char *author; /\* driver author *\/ */
-/*   char *comment; /\* driver comment *\/ */
-/*   int  preferred_byte_format; */
-/*   int  priority; */
-/*   char **options; */
-/*   int  option_count; */
-/* } ao_info; */
-
-/* typedef struct ao_functions ao_functions; */
-/* typedef struct ao_device ao_device; */
-
-/* typedef struct ao_sample_format { */
-/*   int  bits; /\* bits per sample *\/ */
-/*   int  rate; /\* samples per second (in a single channel) *\/ */
-/*   int  channels; /\* number of audio channels *\/ */
-/*   int  byte_format; /\* Byte ordering in sample, see constants below *\/ */
-/*   char *matrix; /\* input channel location/ordering *\/ */
-/* } ao_sample_format; */
-
-/* typedef struct ao_option { */
-/*   char *key; */
-/*   char *value; */
-/*   struct ao_option *next; */
-/* } ao_option; */
-
-/* library setup/teardown */
-/* void ao_initialize(void); */
-/* void ao_shutdown(void); */
-
 /*
   call-seq: AO.new
 
@@ -316,27 +254,6 @@ rao_shutdown(VALUE obj)
   return Qnil;
 }
 
-/* device setup/playback/teardown */
-/* int   ao_append_global_option(const char *key, */
-/*                               const char *value); */
-/* int          ao_append_option(ao_option **options, */
-/*                               const char *key, */
-/*                               const char *value); */
-/* void          ao_free_options(ao_option *options); */
-/* ao_device*       ao_open_live(int driver_id, */
-/*                               ao_sample_format *format, */
-/*                               ao_option *option); */
-/* ao_device*       ao_open_file(int driver_id, */
-/*                               const char *filename, */
-/*                               int overwrite, */
-/*                               ao_sample_format *format, */
-/*                               ao_option *option); */
-
-/* int                   ao_play(ao_device *device, */
-/*                               char *output_samples, */
-/*                               uint_32 num_bytes); */
-/* int                  ao_close(ao_device *device); */
-
 /*
   call-seq: ao.append_global_option(key, value)
 
@@ -345,8 +262,8 @@ rao_shutdown(VALUE obj)
   各ドライバ毎のオプションについては下記を参照。
   http://xiph.org/ao/doc/drivers.html
 
-  [param1] key(String)
-  [param2] value(String)
+  [arg1] key(String)
+  [arg2] value(String)
   [return] true
  */
 static VALUE
@@ -374,13 +291,14 @@ rao_append_global_option(VALUE obj,
   特に設定が必要なければnilで構わない。
   ex) ALSAドライバのデバイスをhw:1に設定する場合は [["dev", "hw:1"]] を渡す。
 
-  [param1] DriverID
-  [param2] bits(Fixnum)
-  [param3] rate(Fixnum)
-  [param4] channels(fixnum)
-  [param5] byte_format(fixnum)
-  [param6] matrix(String or nil)
-  [param7] option(Array or nil)
+  [arg1] DriverID
+  [arg2] bits(Fixnum)
+  [arg3] rate(Fixnum)
+  [arg4] channels(fixnum)
+  [arg5] byte_format(fixnum)
+  [arg6] matrix(String or nil)
+  [arg7] option(Array or nil)
+  [return] CAO::CDevice
 */
 static VALUE
 rao_open_live(VALUE obj,      VALUE driver_id,
@@ -388,10 +306,10 @@ rao_open_live(VALUE obj,      VALUE driver_id,
 	      VALUE byte_format, VALUE matrix, 
 	      VALUE a_options)
 {
-  int               id;
   ao_device        *dev;
   ao_sample_format *format;
   ao_option        *option;
+  dev_data         *devdat;
 
   Check_Type(driver_id,   T_FIXNUM);
   format = set_format(bits, rate, channels, byte_format, matrix);
@@ -430,12 +348,14 @@ rao_open_live(VALUE obj,      VALUE driver_id,
   	       strerror(errno));
     }
   }
-  if (id = append_device(dev, format, option) < 0){
+  if ((devdat = append_device(dev, format, option)) == NULL){
     rb_raise(cAO_eUnknownError,
-	     "Unknown error - %s",
+	     "memory allocation failure - %s",
 	     strerror(errno));
   }
-  return INT2FIX(id);
+
+  return Data_Wrap_Struct(cAO_cDevice, 0, 
+			  remove_device, devdat);
 }
 
 /*
@@ -448,15 +368,16 @@ rao_open_live(VALUE obj,      VALUE driver_id,
   特に設定が必要なければnilで構わない。
   ex) RAWドライバの出力エンディアンをビッグエンディアンに設定する場合は [["byteirder", "big"]] を渡す。
 
-  [param1] DriverID
-  [param2] filepath(String)
-  [param3] overwrite?(true or false)
-  [param4] bits(Fixnum)
-  [param5] rate(Fixnum)
-  [param6] channels(fixnum)
-  [param7] byte_format(fixnum)
-  [param8] matrix(String or nil)
-  [param9] option(Array or nil)
+  [arg1] DriverID
+  [arg2] filepath(String)
+  [arg3] overwrite?(true or false)
+  [arg4] bits(Fixnum)
+  [arg5] rate(Fixnum)
+  [arg6] channels(fixnum)
+  [arg7] byte_format(fixnum)
+  [arg8] matrix(String or nil)
+  [arg9] option(Array or nil)
+  [return] CAO::CDevice
 */
 static VALUE
 rao_open_file(VALUE obj,      VALUE driver_id,
@@ -465,7 +386,7 @@ rao_open_file(VALUE obj,      VALUE driver_id,
 	      VALUE byte_format, VALUE matrix,
 	      VALUE a_options)
 {
-  unsigned int      id;
+  dev_data         *devdat;
   ao_device        *dev;
   ao_sample_format *format;
   ao_option        *option;
@@ -517,40 +438,40 @@ rao_open_file(VALUE obj,      VALUE driver_id,
 	       strerror(errno));
     }
   }  
-  if (id = append_device(dev, format, option) < 0){
+  if ((devdat = append_device(dev, format, option)) == NULL){
     rb_raise(cAO_eUnknownError,
-	     "Unknown error - %s",
+	     "memory allocation failure - %s",
 	     strerror(errno));
   }
-  return INT2FIX(id);
+
+  return Data_Wrap_Struct(cAO_cDevice, 0, remove_device, devdat);
 }
 
 /*
-  call-seq: ao.play(device_id, output_samples)
+  call-seq: ao.play(device, output_samples)
 
   受け取ったサンプルを再生する。
   (デバイスがファイル出力の場合はファイルに書き出す)
   一度に渡せる量はunsigned int(32bit)の範囲まで。
 
-  [param1] DeviceID
-  [param2] buffer(String)
+  [arg1] CAO::CDevice
+  [arg2] buffer(String)
   [return] Fixnum
 */
 static VALUE
-rao_play(VALUE obj,            VALUE device_id,
+rao_play(VALUE obj,            VALUE rdevdata,
 	 VALUE output_samples)
 {
   ao_device *dev;
   int        result;
   uint32_t   bytes;
-
+  dev_data  *devdata;
   Check_Type(output_samples, T_STRING);
-  Check_Type(device_id, T_FIXNUM);
+  Data_Get_Struct(rdevdata, dev_data, devdata);
   bytes = RSTRING_LENINT(output_samples);
-  if ((dev = search_device(FIX2INT(device_id))) == NULL){
-    rb_raise(cAO_eDeviceError, "Cannot find device from device ID.");
-  }
-  result = ao_play(dev, StringValuePtr(output_samples), bytes);
+  result = 
+    ao_play(devdata->device,
+	    StringValuePtr(output_samples), bytes);
   if (result == 0){
     rb_raise(cAO_eDeviceError, "Device should be closed.");
   }
@@ -558,66 +479,48 @@ rao_play(VALUE obj,            VALUE device_id,
 }
 
 /*
-  call-seq: ao.close(device_id)
+  call-seq: ao.close(device)
 
   デバイスを閉じる。
-  [param1] DeviceID
+  [arg1] CAO::CDevice
   [return] true
 */
 static VALUE
-rao_close(VALUE obj, VALUE device_id)
+rao_close(VALUE obj, VALUE rdevdata)
 {
-  ao_device *dev;
-  int result;
-  int devid = FIX2INT(device_id);
-  Check_Type(device_id, T_FIXNUM);
-  if ((dev = search_device(devid)) == NULL){
-    rb_raise(cAO_eDeviceError, "Cannot find device from device ID.");
-  }
-  result = ao_close(dev);
-  remove_device(devid);
-  if (result == 0){
-    rb_raise(cAO_eDeviceError,
-	     "Indicates an error while the device was being closed.");
-  }
+  int        result;
+  dev_data  *devdata;
+  Data_Get_Struct(rdevdata, dev_data, devdata);
+  close_device(devdata);
   return Qtrue;
 }
 
 /*
-  call-seq: ao.closed?(device_id)
+  call-seq: ao.close(device)
 
-  デバイスが閉じられているか否かを調査する。
-  閉じられている場合true, 閉じられていない場合falseを返す。
-  
-  [param1] DeviceID
+  デバイスが既に閉じられているか確認する。
+  [arg1] CAO::CDevice
   [return] true or false
 */
 static VALUE
-rao_closed(VALUE obj, VALUE device_id)
+rao_closed(VALUE obj, VALUE rdevdata)
 {
-  ao_device *dev;
-  int result;
-  Check_Type(device_id, T_FIXNUM);
-  if ((dev = search_device(FIX2INT(device_id))) == NULL){
+  dev_data  *devdata;
+  Data_Get_Struct(rdevdata, dev_data, devdata);
+  if (devdata->device == NULL){
     return Qtrue;
   }
   return Qfalse;
 }
 
 /* driver information */
-/* int              ao_driver_id(const char *short_name); */
-/* int      ao_default_driver_id(void); */
-/* ao_info       *ao_driver_info(int driver_id); */
-/* ao_info **ao_driver_info_list(int *driver_count); */
-/* char       *ao_file_extension(int driver_id); */
-
 /*
   call-seq: ao.driver_id(short_name)
 
   short_nameを元にDriverIDを検索する。
   見つからなかった場合はnilを返す。
 
-  [param1] short_name(String)
+  [arg1] short_name(String)
   [return] DriverID or nil
 */
 static VALUE
@@ -661,7 +564,7 @@ rao_default_driver_id(VALUE obj)
   comment(String), preferred_byte_format(Fixnum),
   priority(Fixnum), option_count(Fixnum), options(Array)]
 
-  [param1] DriverID
+  [arg1] DriverID
   [return] Driver Information(Array)
 */
 static VALUE
@@ -704,7 +607,7 @@ rao_driver_info_list(VALUE obj)
   call-seq: ao.file_extension(driver_id)
 
   ファイル出力時の拡張子の標準を確認する。
-  [param1] DriverID
+  [arg1] DriverID
   [return] ext name(String)
 */
 static VALUE
@@ -722,8 +625,6 @@ rao_file_extension(VALUE obj, VALUE driver_id)
 }
 
 /* miscellaneous */
-/* int          ao_is_big_endian(void); */
-
 /*
   call-seq: ao.bigendian?
 
@@ -750,6 +651,7 @@ void
 Init_cao(void)
 {
   cAO = rb_define_class("CAO", rb_cObject);
+  cAO_cDevice = rb_define_class_under(cAO, "CDevice", rb_cData);
 
   /* exceptions */
   cAO_eAOError =
@@ -797,7 +699,6 @@ Init_cao(void)
   rb_define_method(cAO, "open_file",            rao_open_file, 9);
   rb_define_method(cAO, "play",                 rao_play, 2);
   rb_define_method(cAO, "close",                rao_close, 1);
-  /*rb_define_method(cAO, "close_all_device"      rao_close_all_device, 1);*/
   rb_define_method(cAO, "closed?",              rao_closed, 1);
 
   /* driver information */
