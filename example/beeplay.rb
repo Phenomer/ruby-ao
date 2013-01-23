@@ -8,7 +8,7 @@
 require 'ao'
 require 'io/console'
 
-def gen_sample(freq, volume=0.2, sec=0.1, rate=44100)
+def gen_sample(freq, volume=0.5, sec=0.1, rate=44100)
   buffer = Array.new
   0.upto(rate * sec){|i|
     sample = volume * 32768.0 * Math.sin(2 * Math::PI * freq * (i.to_f/rate))
