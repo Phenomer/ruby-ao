@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
                          "ext/cao.c", "ext/extconf.rb", "lib/ao.rb"]
   s.extra_rdoc_files  = ["README.rdoc", "CHANGELOG.rdoc", "ext/cao.c",
                          "example/drivers.rb", "example/rawplay.rb",
-                         "example/beep.rb"]
+                         "example/beeplay.rb"]
   s.extensions        = ["ext/extconf.rb"]
   s.require_paths     = ["lib"]
   s.required_ruby_version = Gem::Requirement.new(">=1.9.1")
