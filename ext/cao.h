@@ -23,4 +23,5 @@ dev_data * append_device(ao_device *dev, ao_sample_format *format,
 			 ao_option *option);
 void close_device(dev_data *devdat);
 void remove_device(dev_data *devdat);
+void init_cao_device(void);
 #endif
