@@ -36,7 +36,6 @@ raodev_initialize(VALUE obj, VALUE rdevdata)
 static VALUE
 raodev_play(VALUE obj, VALUE output_samples)
 {
-  ao_device *dev;
   int        result;
   uint32_t   bytes;
   dev_data  *devdata;
@@ -65,7 +64,6 @@ raodev_play(VALUE obj, VALUE output_samples)
 static VALUE
 raodev_close(VALUE obj)
 {
-  int        result;
   dev_data  *devdata;
   Data_Get_Struct(rb_ivar_get(obj, rb_intern("@device")),
 		  dev_data, devdata);
