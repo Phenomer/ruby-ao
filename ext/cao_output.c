@@ -2,132 +2,24 @@
 #include<stdlib.h>
 #include<string.h>
 #include<errno.h>
-#include<ruby.h>
-#include<ao/ao.h>
-#include<ao/os_types.h>
-#include<ao/plugin.h>
+#include "cao.h"
 
-static VALUE cAO;
-static VALUE cAO_cDevice;
-static VALUE cAO_eAOError;
+VALUE cAudio;
+VALUE cAO;
+VALUE cAO_cDeviceData;
+VALUE cAO_eAOError;
+VALUE cAO_eDeviceError;
+VALUE cAO_eUnknownError;
+
 static VALUE cAO_eNoDriver;
 static VALUE cAO_eNotFile;
 static VALUE cAO_eNotLive;
 static VALUE cAO_eBadOption;
 static VALUE cAO_eDriverError;
-static VALUE cAO_eDeviceError;
+
 static VALUE cAO_eFileError;
 static VALUE cAO_eFileExists;
 static VALUE cAO_eBadFormat;
-static VALUE cAO_eUnknownError;
-
-typedef struct dev_data {
-  ao_device        *device;
-  ao_sample_format *format;
-  ao_option        *option;
-  struct dev_data  *next;
-} dev_data;
-
-static dev_data *devices = NULL;
-
-/*
-  devdata構造体の持つデバイスを全て閉じ、
-  またオプションとフォーマットの情報も削除する。
-  メンバ変数にはNULLを設定する。
-  devdata構造体自体は開放しない。
-  (rubyのGCによって実行されるremove_device関数に任せるため)
- */
-void
-close_device(dev_data *devdat){
-  ao_close(devdat->device);
-  ao_free_options(devdat->option);
-  free(devdat->format);
-  devdat->device = NULL;
-  devdat->option = NULL;
-  devdat->format = NULL;
-}
-
-/*
-  デバイス一覧にデバイスを追加する。
-  追加した構造体へのポインタを返す。
-  割当に失敗した場合は-1を返す。
-*/
-dev_data *
-append_device(ao_device *dev, ao_sample_format *format,
-	      ao_option *option)
-{
-  dev_data *behind  = NULL;
-  dev_data *current = devices;
-
-  while (current != NULL){
-    behind  = current;
-    current = current->next;
-  }
-  current         = ALLOC(dev_data);
-  current->device = dev;
-  current->format = format;
-  current->option = option;
-  current->next   = NULL;
-  if (behind != NULL){
-    behind->next  = current;
-  } else {
-    devices = current;
-  }
-
-  return current;
-}
-
-/* 
-   デバイス一覧からdev_data構造体へのポインタを元にデバイスを削除する。
-   この関数はopen_live()とopen_file()にてdev_data構造体をWrapする時に
-   構造体free用関数として渡す(rubyのGCにて呼ばれるよう設定する)
-   Data_Wrap_Struct(cAO_cDevice, 0, remove_device, devdat);
-*/
-void
-remove_device(dev_data *devdat)
-{
-  dev_data *behind  = NULL;
-  dev_data *current = devices;
-  
-  fprintf(stderr, "rm - dev: %p, fmt: %p, opt: %p\n", 
-	  devdat->device,
-	  devdat->format,
-	  devdat->option);
-
-  /* リストの先頭がNULLではなくかつ先頭にマッチした場合 */
-  if (devices != NULL && devices == devdat){
-    close_device(devdat);
-    /* 次のデータが存在している場合、先頭をそのデータに入れ替える
-     存在しない場合先頭をNULLにする */
-    if (devices->next != NULL){
-      devices = devdat->next;
-    } else{
-      devices = NULL;
-    }
-    free(devdat);
-    return;
-  }
-
-  /* リスト先頭がマッチしなかった場合 */
-  while (current != NULL){
-    if (current == devdat){
-      /* 削除するデータの次にデータが存在すれば、
-	 それを前のデータのnextに設定する。 */
-      if (devdat->next != NULL){
-	behind->next = devdat->next;
-      }
-      close_device(devdat);
-      free(devdat);
-      return;
-    }
-    behind  = current;
-    current = current->next;
-  }
-  
-  /* バグがなければ到達しない */
-  rb_raise(cAO_eUnknownError, "Fatal GC error.");
-  return;
-}
 
 
 /*
@@ -227,10 +119,10 @@ ao_info2array(ao_info *info)
 }
 
 /*
-  call-seq: AO.new
-
-  libaoを初期化する。これを実行してからshutdownを実行するまでの間のみ
-  CAOクラスのメソッドを利用できる。
+ * call-seq: AO.new
+ *
+ * libaoを初期化する。これを実行してからshutdownを実行するまでの間のみ
+ * BasicOutputクラスのメソッドを利用できる。
  */
 static VALUE
 rao_initialize(VALUE obj)
@@ -240,12 +132,12 @@ rao_initialize(VALUE obj)
 }
 
 /*
-  call-seq: ao.shutdown
+ * call-seq: ao.shutdown
 
-  libaoを終了する。shutdownの前に開いている全てのデバイスを
-  closeしておかなければならない。
-  
-  [return] nil
+ * libaoを終了する。shutdownの前に開いている全てのデバイスを
+ * closeしておかなければならない。
+ *
+ * [return] nil
  */
 static VALUE
 rao_shutdown(VALUE obj)
@@ -255,16 +147,16 @@ rao_shutdown(VALUE obj)
 }
 
 /*
-  call-seq: ao.append_global_option(key, value)
-
-  libao全体で参照されるオプションを設定する。
-  オプションはKey-Value形式で設定する。
-  各ドライバ毎のオプションについては下記を参照。
-  http://xiph.org/ao/doc/drivers.html
-
-  [arg1] key(String)
-  [arg2] value(String)
-  [return] true
+ * call-seq: ao.append_global_option(key, value)
+ *
+ * libao全体で参照されるオプションを設定する。
+ * オプションはKey-Value形式で設定する。
+ * 各ドライバ毎のオプションについては下記を参照。
+ * http://xiph.org/ao/doc/drivers.html
+ *
+ * [arg1] key(String)
+ * [arg2] value(String)
+ * [return] true
  */
 static VALUE
 rao_append_global_option(VALUE obj,
@@ -282,24 +174,25 @@ rao_append_global_option(VALUE obj,
 }
 
 /*
-  call-seq: ao.open_live(driver_id, bits, rate, channels, byte_format, matrix, options)
-
-  LiveDeviceを開く。引数に指定するmatrixとoptionについては以下を参照。
-  [matrix] http://xiph.org/ao/doc/ao_sample_format.html
-  [option] http://xiph.org/ao/doc/drivers.html
-  optionはKey-Valueを要素に含む多次元配列を設定する。
-  特に設定が必要なければnilで構わない。
-  ex) ALSAドライバのデバイスをhw:1に設定する場合は [["dev", "hw:1"]] を渡す。
-
-  [arg1] DriverID
-  [arg2] bits(Fixnum)
-  [arg3] rate(Fixnum)
-  [arg4] channels(fixnum)
-  [arg5] byte_format(fixnum)
-  [arg6] matrix(String or nil)
-  [arg7] option(Array or nil)
-  [return] CAO::CDevice
-*/
+ * call-seq: ao.open_live(driver_id, bits, rate, channels, byte_format, matrix, options)
+ *
+ * オーディオ出力デバイスを開く。
+ * 引数に指定するmatrixとoptionについては以下を参照。
+ * [matrix] http://xiph.org/ao/doc/ao_sample_format.html
+ * [option] http://xiph.org/ao/doc/drivers.html
+ * optionはKey-Valueを要素に含む多次元配列を設定する。
+ * 特に設定が必要なければnilで構わない。
+ * ex) ALSAドライバのデバイスをhw:1に設定する場合は [["dev", "hw:1"]] を渡す。
+ *
+ * [arg1] DriverID
+ * [arg2] bits(Fixnum)
+ * [arg3] rate(Fixnum)
+ * [arg4] channels(fixnum)
+ * [arg5] byte_format(fixnum)
+ * [arg6] matrix(String or nil)
+ * [arg7] option(Array or nil)
+ * [return] BasicOutput::BasicDeviceData
+ */
 static VALUE
 rao_open_live(VALUE obj,      VALUE driver_id,
 	      VALUE bits, VALUE rate, VALUE channels,
@@ -354,31 +247,31 @@ rao_open_live(VALUE obj,      VALUE driver_id,
 	     strerror(errno));
   }
 
-  return Data_Wrap_Struct(cAO_cDevice, 0, 
+  return Data_Wrap_Struct(cAO_cDeviceData, 0, 
 			  remove_device, devdat);
 }
 
 /*
-  call-seq: ao.open_file(driver_id, filepath, overwrite, bits, rate, channels, byte_format, matrix, options)
-
-  Fileを開く。引数に指定するmatrixとoptionについては以下を参照。
-  [matrix] http://xiph.org/ao/doc/ao_sample_format.html
-  [option] http://xiph.org/ao/doc/drivers.html
-  optionはKey-Valueを要素に含む多次元配列を設定する。
-  特に設定が必要なければnilで構わない。
-  ex) RAWドライバの出力エンディアンをビッグエンディアンに設定する場合は [["byteirder", "big"]] を渡す。
-
-  [arg1] DriverID
-  [arg2] filepath(String)
-  [arg3] overwrite?(true or false)
-  [arg4] bits(Fixnum)
-  [arg5] rate(Fixnum)
-  [arg6] channels(fixnum)
-  [arg7] byte_format(fixnum)
-  [arg8] matrix(String or nil)
-  [arg9] option(Array or nil)
-  [return] CAO::CDevice
-*/
+ * call-seq: ao.open_file(driver_id, filepath, overwrite, bits, rate, channels, byte_format, matrix, options)
+ *
+ * ファイルを開く。引数に指定するmatrixとoptionについては以下を参照。
+ * [matrix] http://xiph.org/ao/doc/ao_sample_format.html
+ * [option] http://xiph.org/ao/doc/drivers.html
+ * optionはKey-Valueを要素に含む多次元配列を設定する。
+ * 特に設定が必要なければnilで構わない。
+ * ex) RAWドライバの出力エンディアンをビッグエンディアンに設定する場合は [["byteirder", "big"]] を渡す。
+ *
+ * [arg1] DriverID(Fixnum)
+ * [arg2] filepath(String)
+ * [arg3] overwrite?(true or false)
+ * [arg4] bits(Fixnum)
+ * [arg5] rate(Fixnum)
+ * [arg6] channels(fixnum)
+ * [arg7] byte_format(fixnum)
+ * [arg8] matrix(String or nil)
+ * [arg9] option(Array or nil)
+ * [return] BasicOutput::BasicDeviceData
+ */
 static VALUE
 rao_open_file(VALUE obj,      VALUE driver_id,
 	      VALUE filename, VALUE overwrite,
@@ -444,85 +337,20 @@ rao_open_file(VALUE obj,      VALUE driver_id,
 	     strerror(errno));
   }
 
-  return Data_Wrap_Struct(cAO_cDevice, 0, remove_device, devdat);
+  return Data_Wrap_Struct(cAO_cDeviceData, 0, remove_device, devdat);
 }
 
-/*
-  call-seq: ao.play(device, output_samples)
-
-  受け取ったサンプルを再生する。
-  (デバイスがファイル出力の場合はファイルに書き出す)
-  一度に渡せる量はunsigned int(32bit)の範囲まで。
-
-  [arg1] CAO::CDevice
-  [arg2] buffer(String)
-  [return] Fixnum
-*/
-static VALUE
-rao_play(VALUE obj,            VALUE rdevdata,
-	 VALUE output_samples)
-{
-  ao_device *dev;
-  int        result;
-  uint32_t   bytes;
-  dev_data  *devdata;
-  Check_Type(output_samples, T_STRING);
-  Data_Get_Struct(rdevdata, dev_data, devdata);
-  bytes = RSTRING_LENINT(output_samples);
-  result = 
-    ao_play(devdata->device,
-	    StringValuePtr(output_samples), bytes);
-  if (result == 0){
-    rb_raise(cAO_eDeviceError, "Device should be closed.");
-  }
-  return INT2FIX(result);
-}
-
-/*
-  call-seq: ao.close(device)
-
-  デバイスを閉じる。
-  [arg1] CAO::CDevice
-  [return] true
-*/
-static VALUE
-rao_close(VALUE obj, VALUE rdevdata)
-{
-  int        result;
-  dev_data  *devdata;
-  Data_Get_Struct(rdevdata, dev_data, devdata);
-  close_device(devdata);
-  return Qtrue;
-}
-
-/*
-  call-seq: ao.close(device)
-
-  デバイスが既に閉じられているか確認する。
-  [arg1] CAO::CDevice
-  [return] true or false
-*/
-static VALUE
-rao_closed(VALUE obj, VALUE rdevdata)
-{
-  dev_data  *devdata;
-  Data_Get_Struct(rdevdata, dev_data, devdata);
-  if (devdata->device == NULL){
-    return Qtrue;
-  }
-  return Qfalse;
-}
 
 /* driver information */
 /*
-  call-seq: ao.driver_id(short_name)
-
-  short_nameを元にDriverIDを検索する。
-  見つからなかった場合はnilを返す。
-
-  [arg1] short_name(String)
-  [return] DriverID or nil
-*/
+ * call-seq: ao.driver_id(short_name)
+ *
+ * short_nameを元にDriverIDを検索する。
+ * 見つからなかった場合はnilを返す。
+ *
+ * [arg1] short_name(String)
+ * [return] DriverID or nil
+ */
 static VALUE
 rao_driver_id(VALUE obj, VALUE short_name)
 {
@@ -531,18 +359,16 @@ rao_driver_id(VALUE obj, VALUE short_name)
   driver_id = ao_driver_id(StringValuePtr(short_name));
   if (driver_id < 0){
     return Qnil;
-    /* rb_raise(cAO_eNoDriver, */
-    /* 	     "No driver by that name exists."); */
   }
   return INT2FIX(driver_id);
 }
 
 /*
-  call-seq: ao.default_driver_id
-
-  デフォルトのDriverIDを返す。
-  [return] DriverID
-*/
+ * call-seq: ao.default_driver_id
+ *
+ * デフォルトのDriverIDを返す。
+ * [return] DriverID
+ */
 static VALUE
 rao_default_driver_id(VALUE obj)
 {
@@ -556,17 +382,17 @@ rao_default_driver_id(VALUE obj)
 }
 
 /*
-  call-seq: ao.driver_info(driver_id)
-
-  ドライバの情報を確認する。
-  ドライバ情報の要素順は以下の通り。
-  [name(String), short_name(String), author(String),
-  comment(String), preferred_byte_format(Fixnum),
-  priority(Fixnum), option_count(Fixnum), options(Array)]
-
-  [arg1] DriverID
-  [return] Driver Information(Array)
-*/
+ * call-seq: ao.driver_info(driver_id)
+ *
+ * ドライバの情報を確認する。
+ * ドライバ情報の要素順は以下の通り。
+ * [name(String), short_name(String), author(String),
+ * comment(String), preferred_byte_format(Fixnum),
+ * priority(Fixnum), option_count(Fixnum), options(Array)]
+ *
+ * [arg1] DriverID
+ * [return] Driver Information(Array)
+ */
 static VALUE
 rao_driver_info(VALUE obj, VALUE driver_id)
 {
@@ -582,11 +408,11 @@ rao_driver_info(VALUE obj, VALUE driver_id)
 }
 
 /*
-  call-seq: ao.driver_info_list
-
-  システムのlibaoがサポートしているドライバ一覧を配列で返す。
-  [return] ドライバ一覧の配列
-*/
+ * call-seq: ao.driver_info_list
+ *
+ * システムのlibaoがサポートしているドライバ一覧を配列で返す。
+ * [return] ドライバ一覧の配列
+ */
 static VALUE
 rao_driver_info_list(VALUE obj)
 {
@@ -604,12 +430,13 @@ rao_driver_info_list(VALUE obj)
 }
 
 /*
-  call-seq: ao.file_extension(driver_id)
-
-  ファイル出力時の拡張子の標準を確認する。
-  [arg1] DriverID
-  [return] ext name(String)
-*/
+ * call-seq: ao.file_extension(driver_id)
+ *
+ * ファイル出力時の拡張子の標準を確認する。
+ *
+ * [arg1] DriverID
+ * [return] ext name(String)
+ */
 static VALUE
 rao_file_extension(VALUE obj, VALUE driver_id)
 {
@@ -626,11 +453,11 @@ rao_file_extension(VALUE obj, VALUE driver_id)
 
 /* miscellaneous */
 /*
-  call-seq: ao.bigendian?
-
-  ホストの環境がビッグエンディアンであるか否かを調査する。
-  [return] ビッグエンディアンであればtrue、リトルエンディアンであればfalse
-*/
+ * call-seq: ao.bigendian?
+ *
+ * ホストの環境がビッグエンディアンであるか否かを調査する。
+ * [return] ビッグエンディアンであればtrue、リトルエンディアンであればfalse
+ */
 static VALUE
 rao_is_big_endian(VALUE obj)
 {
@@ -642,29 +469,40 @@ rao_is_big_endian(VALUE obj)
 }
 
 
-/*
-  Ruby-AOの基礎となるクラス。通常はこれを直接利用するのではなく、
-  利用しやすい形にしたAOクラスを用いる。
-*/
-
 void
 Init_cao(void)
 {
-  cAO = rb_define_class("CAO", rb_cObject);
+  /*
+   * Ruby-AOの基礎となるクラス。通常はこれを直接利用するのではなく、
+   * 利用しやすい形にしたAudio::Outputクラスを用いる。
+   */
+  cAudio = rb_define_class("Audio", rb_cObject);
+
+  /*
+   * 基本的なオーディオ出力機能をサポートするクラス。
+   */
+  cAO            = rb_define_class_under(cAudio, "BasicOutput",
+					 rb_cObject);
 
   /* 
-     開いたデバイスに関する情報を保持するクラス。
-     ruby側から操作することはできない。
+   * 開いたデバイスに関する基本的な情報を保持するクラス。
+   * ruby側から操作はしない。
    */
-  cAO_cDevice = rb_define_class_under(cAO, "CDevice", rb_cData);
-
-  /* exceptions */
+  cAO_cDeviceData = rb_define_class_under(cAO, "BasicDeviceData", rb_cData);
+  /* 
+   * exceptions
+   */
   cAO_eAOError =
     rb_define_class_under(cAO, "AOError", rb_eStandardError);
+  /*
+   * ドライバが見つからない時に発生する
+   */
   cAO_eNoDriver =
     rb_define_class_under(cAO, "NoDriver",     cAO_eAOError);
+  /* ドライバがファイル出力用のものではない時に発生する */
   cAO_eNotFile =
     rb_define_class_under(cAO, "NotFile",      cAO_eAOError);
+  /* ドライバがデバイス出力用のものではない時に発生する */
   cAO_eNotLive =
     rb_define_class_under(cAO, "NotLive",      cAO_eAOError);
   cAO_eBadOption =
@@ -682,6 +520,7 @@ Init_cao(void)
   cAO_eUnknownError =
     rb_define_class_under(cAO, "UnknownError", cAO_eAOError);
 
+
   /* constants */
   /* ドライバがLive出力用であることを示す。 */
   rb_define_const(cAO, "TYPE_LIVE",  INT2FIX(AO_TYPE_LIVE));
@@ -694,7 +533,7 @@ Init_cao(void)
   /* データのエンディアンがホストのネイティブ形式であることを示す。 */
   rb_define_const(cAO, "FMT_NATIVE", INT2FIX(AO_FMT_NATIVE));
 
-  /* library setup/shutdown */
+  /* library initialize & shutdown */
   rb_define_private_method(cAO, "initialize", rao_initialize, 0);
   rb_define_method(cAO,         "shutdown",   rao_shutdown, 0);
 
@@ -702,9 +541,6 @@ Init_cao(void)
   rb_define_method(cAO, "append_global_option", rao_append_global_option, 2);
   rb_define_method(cAO, "open_live",            rao_open_live, 7);
   rb_define_method(cAO, "open_file",            rao_open_file, 9);
-  rb_define_method(cAO, "play",                 rao_play, 2);
-  rb_define_method(cAO, "close",                rao_close, 1);
-  rb_define_method(cAO, "closed?",              rao_closed, 1);
 
   /* driver information */
   rb_define_method(cAO, "driver_id",         rao_driver_id, 1);
@@ -715,4 +551,6 @@ Init_cao(void)
 
   /* miscellaneous */
   rb_define_method(cAO, "bigendian?", rao_is_big_endian, 0);
+
+  init_cao_device();
 }
