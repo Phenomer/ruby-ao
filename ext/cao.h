@@ -12,6 +12,16 @@ extern VALUE cAO_eAOError;
 extern VALUE cAO_eDeviceError;
 extern VALUE cAO_eUnknownError;
 
+extern VALUE cAO_eNoDriver;
+extern VALUE cAO_eNotFile;
+extern VALUE cAO_eNotLive;
+extern VALUE cAO_eBadOption;
+extern VALUE cAO_eDriverError;
+
+extern VALUE cAO_eFileError;
+extern VALUE cAO_eFileExists;
+extern VALUE cAO_eBadFormat;
+
 typedef struct dev_data {
   ao_device        *device;
   ao_sample_format *format;
@@ -19,9 +29,13 @@ typedef struct dev_data {
   struct dev_data  *next;
 } dev_data;
 
-dev_data * append_device(ao_device *dev, ao_sample_format *format,
+dev_data * append_device(ao_device *dev,
+			 ao_sample_format *format,
 			 ao_option *option);
 void close_device(dev_data *devdat);
 void remove_device(dev_data *devdat);
+
+void init_exception(void);
+void init_constant(void);
 void init_cao_device(void);
 #endif

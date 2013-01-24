@@ -11,16 +11,15 @@ VALUE cAO_eAOError;
 VALUE cAO_eDeviceError;
 VALUE cAO_eUnknownError;
 
-static VALUE cAO_eNoDriver;
-static VALUE cAO_eNotFile;
-static VALUE cAO_eNotLive;
-static VALUE cAO_eBadOption;
-static VALUE cAO_eDriverError;
+VALUE cAO_eNoDriver;
+VALUE cAO_eNotFile;
+VALUE cAO_eNotLive;
+VALUE cAO_eBadOption;
+VALUE cAO_eDriverError;
 
-static VALUE cAO_eFileError;
-static VALUE cAO_eFileExists;
-static VALUE cAO_eBadFormat;
-
+VALUE cAO_eFileError;
+VALUE cAO_eFileExists;
+VALUE cAO_eBadFormat;
 
 /*
   引数に設定されたサンプルフォーマットをao_sample_format構造体に設定する。
@@ -468,88 +467,46 @@ rao_is_big_endian(VALUE obj)
   }
 }
 
-/* 
- * exceptions
- */
-void init_exceptions(void)
-{
-  cAO_eAOError =
-    rb_define_class_under(cAO, "AOError", rb_eStandardError);
-  /* ドライバが見つからない時に発生する */
-  cAO_eNoDriver =
-    rb_define_class_under(cAO, "NoDriver",     cAO_eAOError);
-  /* ドライバがファイル出力用のものではない時に発生する */
-  cAO_eNotFile =
-    rb_define_class_under(cAO, "NotFile",      cAO_eAOError);
-  /* ドライバがデバイス出力用のものではない時に発生する */
-  cAO_eNotLive =
-    rb_define_class_under(cAO, "NotLive",      cAO_eAOError);
-  cAO_eBadOption =
-    rb_define_class_under(cAO, "BadOption",    cAO_eAOError);
-  cAO_eDriverError =
-    rb_define_class_under(cAO, "DriverError",  cAO_eAOError);
-  cAO_eDeviceError =
-    rb_define_class_under(cAO, "DeviceError",  cAO_eAOError);
-  cAO_eFileError =
-    rb_define_class_under(cAO, "FileError",    cAO_eAOError);
-  cAO_eFileExists =
-    rb_define_class_under(cAO, "FileExists",   cAO_eAOError);
-  cAO_eBadFormat =
-    rb_define_class_under(cAO, "BadFormat",    cAO_eAOError);
-  cAO_eUnknownError =
-    rb_define_class_under(cAO, "UnknownError", cAO_eAOError);
-  return;
-}
-
-/* constants */
-void
-init_constants(void)
-{
-  /* ドライバがLive出力用であることを示す。 */
-  rb_define_const(cAO, "TYPE_LIVE",  INT2FIX(AO_TYPE_LIVE));
-  /* ドライバがファイル出力用であることを示す。 */
-  rb_define_const(cAO, "TYPE_FILE",  INT2FIX(AO_TYPE_FILE));
-  /* データのエンディアンがリトルエンディアンであることを示す。 */
-  rb_define_const(cAO, "FMT_LITTLE", INT2FIX(AO_FMT_LITTLE));
-  /* データのエンディアンがビッグエンディアンであることを示す。 */
-  rb_define_const(cAO, "FMT_BIG",    INT2FIX(AO_FMT_BIG));
-  /* データのエンディアンがホストのネイティブ形式であることを示す。 */
-  rb_define_const(cAO, "FMT_NATIVE", INT2FIX(AO_FMT_NATIVE));
-  return;
-}
 
 void
 Init_cao(void)
 {
   /*
-   * Ruby-AOの基礎となるクラス。通常はこれを直接利用するのではなく、
-   * 利用しやすい形にしたAudio::Outputクラスを用いる。
+   * Document-class: Audio
+   *
+   * Ruby-AOの基礎となるクラス。
    */
   cAudio = rb_define_class("Audio", rb_cObject);
 
   /*
+   * Document-class: Audio::BasicOutput
+   *
    * 基本的なオーディオ出力機能をサポートするクラス。
+   * 通常はこれを直接利用するのではなく、
+   * 利用しやすい形にしたAudio::Outputクラスを用いる。
    */
-  cAO            = rb_define_class_under(cAudio, "BasicOutput",
-					 rb_cObject);
+  cAO = rb_define_class_under(cAudio, "BasicOutput", rb_cObject);
 
-  /* 
+  /*
+   * Document-class: Audio::BasicOutput::BasicDeviceData
+   *
    * 開いたデバイスに関する基本的な情報を保持するクラス。
    * ruby側から操作はしない。
    */
   cAO_cDeviceData = rb_define_class_under(cAO, "BasicDeviceData", rb_cData);
 
-  init_exceptions();
-  init_constants();
+  init_exception();
+  init_constant();
+  init_cao_device();
 
   /* library initialize & shutdown */
   rb_define_private_method(cAO, "initialize", rao_initialize, 0);
-  rb_define_method(cAO,         "shutdown",   rao_shutdown, 0);
+  rb_define_method(cAO, "shutdown", rao_shutdown, 0);
 
   /* device setup */
   rb_define_method(cAO, "append_global_option", rao_append_global_option, 2);
-  rb_define_method(cAO, "open_live",            rao_open_live, 7);
-  rb_define_method(cAO, "open_file",            rao_open_file, 9);
+  rb_define_method(cAO, "open_live",         rao_open_live, 7);
+  rb_define_method(cAO, "open_file",         rao_open_file, 9);
 
   /* driver information */
   rb_define_method(cAO, "driver_id",         rao_driver_id, 1);
@@ -560,6 +517,4 @@ Init_cao(void)
 
   /* miscellaneous */
   rb_define_method(cAO, "bigendian?", rao_is_big_endian, 0);
-
-  init_cao_device();
 }
