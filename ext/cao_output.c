@@ -468,35 +468,14 @@ rao_is_big_endian(VALUE obj)
   }
 }
 
-
-void
-Init_cao(void)
+/* 
+ * exceptions
+ */
+void init_exceptions(void)
 {
-  /*
-   * Ruby-AOの基礎となるクラス。通常はこれを直接利用するのではなく、
-   * 利用しやすい形にしたAudio::Outputクラスを用いる。
-   */
-  cAudio = rb_define_class("Audio", rb_cObject);
-
-  /*
-   * 基本的なオーディオ出力機能をサポートするクラス。
-   */
-  cAO            = rb_define_class_under(cAudio, "BasicOutput",
-					 rb_cObject);
-
-  /* 
-   * 開いたデバイスに関する基本的な情報を保持するクラス。
-   * ruby側から操作はしない。
-   */
-  cAO_cDeviceData = rb_define_class_under(cAO, "BasicDeviceData", rb_cData);
-  /* 
-   * exceptions
-   */
   cAO_eAOError =
     rb_define_class_under(cAO, "AOError", rb_eStandardError);
-  /*
-   * ドライバが見つからない時に発生する
-   */
+  /* ドライバが見つからない時に発生する */
   cAO_eNoDriver =
     rb_define_class_under(cAO, "NoDriver",     cAO_eAOError);
   /* ドライバがファイル出力用のものではない時に発生する */
@@ -519,9 +498,13 @@ Init_cao(void)
     rb_define_class_under(cAO, "BadFormat",    cAO_eAOError);
   cAO_eUnknownError =
     rb_define_class_under(cAO, "UnknownError", cAO_eAOError);
+  return;
+}
 
-
-  /* constants */
+/* constants */
+void
+init_constants(void)
+{
   /* ドライバがLive出力用であることを示す。 */
   rb_define_const(cAO, "TYPE_LIVE",  INT2FIX(AO_TYPE_LIVE));
   /* ドライバがファイル出力用であることを示す。 */
@@ -532,12 +515,38 @@ Init_cao(void)
   rb_define_const(cAO, "FMT_BIG",    INT2FIX(AO_FMT_BIG));
   /* データのエンディアンがホストのネイティブ形式であることを示す。 */
   rb_define_const(cAO, "FMT_NATIVE", INT2FIX(AO_FMT_NATIVE));
+  return;
+}
+
+void
+Init_cao(void)
+{
+  /*
+   * Ruby-AOの基礎となるクラス。通常はこれを直接利用するのではなく、
+   * 利用しやすい形にしたAudio::Outputクラスを用いる。
+   */
+  cAudio = rb_define_class("Audio", rb_cObject);
+
+  /*
+   * 基本的なオーディオ出力機能をサポートするクラス。
+   */
+  cAO            = rb_define_class_under(cAudio, "BasicOutput",
+					 rb_cObject);
+
+  /* 
+   * 開いたデバイスに関する基本的な情報を保持するクラス。
+   * ruby側から操作はしない。
+   */
+  cAO_cDeviceData = rb_define_class_under(cAO, "BasicDeviceData", rb_cData);
+
+  init_exceptions();
+  init_constants();
 
   /* library initialize & shutdown */
   rb_define_private_method(cAO, "initialize", rao_initialize, 0);
   rb_define_method(cAO,         "shutdown",   rao_shutdown, 0);
 
-  /* device setup/playback/teardown */
+  /* device setup */
   rb_define_method(cAO, "append_global_option", rao_append_global_option, 2);
   rb_define_method(cAO, "open_live",            rao_open_live, 7);
   rb_define_method(cAO, "open_file",            rao_open_file, 9);

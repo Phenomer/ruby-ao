@@ -15,15 +15,12 @@ static VALUE cAO_cDevice;
 static VALUE
 raodev_initialize(VALUE obj, VALUE rdevdata)
 {
-  /* VALUE rb_ivar_get(VALUE obj, ID id); */
-  /* VALUE rb_ivar_set(VALUE obj, ID id, VALUE val); */
   rb_ivar_set(obj, rb_intern("@device"), rdevdata);
-
   return Qnil;
 }
 
 /*
- * call-seq: ao.play(device, output_samples)
+ * call-seq: dev.play(device, output_samples)
  *
  * 受け取ったサンプルを再生する。
  * (デバイスがファイル出力の場合はファイルに書き出す)
@@ -54,7 +51,7 @@ raodev_play(VALUE obj, VALUE output_samples)
 }
 
 /*
- * call-seq: ao.close(device)
+ * call-seq: dev.close(device)
  *
  * デバイスを閉じる。
  *
@@ -72,7 +69,7 @@ raodev_close(VALUE obj)
 }
 
 /*
- * call-seq: ao.close(device)
+ * call-seq: dev.close(device)
  *
  * デバイスが既に閉じられているか確認する。
  * [arg1] BasicOutput::BasicDeviceData
