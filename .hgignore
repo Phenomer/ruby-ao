@@ -4,5 +4,9 @@ syntax: glob
 *.o
 *.so
 *.gem
+*.wav
+*.raw
+*.ogg
+*.mp3
 ext/Makefile
 
