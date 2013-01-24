@@ -23,7 +23,7 @@ def print_info(info)
 end
 
 
-ao = AO.new
+ao = Audio::Output.new
 puts("Default Driver:")
 print_info(ao.default_driver_info)
 

@@ -9,7 +9,7 @@
 
 require 'ao'
 
-ao = AO.new
+ao = Audio::Output.new
 ARGV.each{|file|
   if File.file?(file)
     ao.open_live{|dev|

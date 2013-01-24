@@ -16,7 +16,7 @@ end
 
 input  = ARGV[0]
 output = ARGV[1]
-ao = AO.new
+ao = Audio::Output.new
 if File.file?(input)
     ao.open_file(ao.driver_id('wav'), output){|dev|
       File.open(input){|f|
