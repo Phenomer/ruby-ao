@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name              = "ao"
-  s.version           = "0.0.1"
+  s.version           = "0.0.2"
   s.summary           = "simple & cross platform audio output library"
   s.description       = "simple & cross platform audio output library(libao binding http://http://xiph.org/ao/)"
   s.author            = "Akito Miura"
@@ -9,10 +9,14 @@ Gem::Specification.new do |s|
   s.has_rdoc          = true
   s.rdoc_options      = "--main README.rdoc"
   s.files             = ["LICENSE", "README.rdoc", "CHANGELOG.rdoc", 
-                         "ext/cao.c", "ext/extconf.rb", "lib/ao.rb"]
-  s.extra_rdoc_files  = ["README.rdoc", "CHANGELOG.rdoc", "ext/cao.c",
-                         "example/drivers.rb", "example/rawplay.rb",
-                         "example/beeplay.rb"]
+                         "ext/cao.h", "ext/cao_output.c", 
+                         "ext/cao_dev_list.c", "ext/cao_device.c",
+                         "ext/extconf.rb", "lib/ao.rb",
+                         "example/beeplay.rb", "example/drivers.rb",
+                         "example/raw2wav.rb", "example/rawplay.rb"]
+  s.extra_rdoc_files  = ["README.rdoc", "CHANGELOG.rdoc", "ext/cao.h",
+                         "ext/cao_output.c", "ext/cao_dev_list.c",
+                         "ext/cao_device.c"]
   s.extensions        = ["ext/extconf.rb"]
   s.require_paths     = ["lib"]
   s.required_ruby_version = Gem::Requirement.new(">=1.9.1")
