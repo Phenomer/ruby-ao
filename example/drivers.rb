@@ -24,11 +24,10 @@ end
 
 
 ao = Audio::Output.new
-puts("Default Driver:")
-print_info(ao.default_driver_info)
-
 ao.driver_info_list.each_with_index{|info, index|
   printf("DriverID: %d\n", index)
   print_info(info)
 }
 
+puts("Default Driver:")
+print_info(ao.default_driver_info)
