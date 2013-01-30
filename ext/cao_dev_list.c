@@ -13,25 +13,26 @@ dev_data *
 append_device(ao_device *dev, ao_sample_format *format,
 	      ao_option *option)
 {
-  dev_data *behind  = NULL;
   dev_data *current = devices;
+  dev_data *behind  = NULL;
+  dev_data *newdev  = NULL;
 
   while (current != NULL){
     behind  = current;
     current = current->next;
   }
-  current         = ALLOC(dev_data);
-  current->device = dev;
-  current->format = format;
-  current->option = option;
-  current->next   = NULL;
+  newdev          = ALLOC(dev_data);
+  newdev->device = dev;
+  newdev->format = format;
+  newdev->option = option;
+  newdev->next   = NULL;
   if (behind != NULL){
-    behind->next  = current;
+    behind->next  = newdev;
   } else {
-    devices = current;
+    devices = newdev;
   }
 
-  return current;
+  return newdev;
 }
 
 /*
@@ -62,14 +63,9 @@ remove_device(dev_data *devdat)
 {
   dev_data *behind  = NULL;
   dev_data *current = devices;
-  
-  fprintf(stderr, "rm - dev: %p, fmt: %p, opt: %p\n", 
-	  devdat->device,
-	  devdat->format,
-	  devdat->option);
 
-  /* リストの先頭がNULLではなくかつ先頭にマッチした場合 */
-  if (devices != NULL && devices == devdat){
+  /* 先頭にマッチした場合 */
+  if (devices == devdat){
     close_device(devdat);
     /* 次のデータが存在している場合、先頭をそのデータに入れ替える
      存在しない場合先頭をNULLにする */
@@ -86,9 +82,12 @@ remove_device(dev_data *devdat)
   while (current != NULL){
     if (current == devdat){
       /* 削除するデータの次にデータが存在すれば、
-	 それを前のデータのnextに設定する。 */
+	 それを前のデータのnextに設定する。
+	 存在しなければNULLを設定する。 */
       if (devdat->next != NULL){
 	behind->next = devdat->next;
+      } else {
+	behind->next = NULL;
       }
       close_device(devdat);
       free(devdat);
@@ -97,9 +96,8 @@ remove_device(dev_data *devdat)
     behind  = current;
     current = current->next;
   }
-  
   /* バグがなければ到達しない */
-  fputs("fatal library error.", stderr);
+  fputs("fatal ao library error.", stderr);
   exit(1);
   return;
 }
