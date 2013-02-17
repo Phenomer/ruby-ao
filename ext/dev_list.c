@@ -1,8 +1,22 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<pthread.h>
 #include "cao.h"
 
 static dev_data *devices = NULL;
+
+void
+free_sample_buffer(sample_buffer *head){
+  sample_buffer *current = head;
+  sample_buffer *behind;
+
+  while(current != NULL){
+    behind  = current;
+    current = current->next;
+    free(behind);
+  }
+  return;
+}
 
 /*
  * デバイス一覧にデバイスを追加する。
@@ -22,10 +36,12 @@ append_device(ao_device *dev, ao_sample_format *format,
     current = current->next;
   }
   newdev          = ALLOC(dev_data);
-  newdev->device = dev;
-  newdev->format = format;
-  newdev->option = option;
-  newdev->next   = NULL;
+  newdev->device  = dev;
+  newdev->format  = format;
+  newdev->option  = option;
+  newdev->playing = 0;
+  newdev->buffer  = NULL;
+  newdev->next    = NULL;
   if (behind != NULL){
     behind->next  = newdev;
   } else {
@@ -44,12 +60,20 @@ append_device(ao_device *dev, ao_sample_format *format,
  */
 void
 close_device(dev_data *devdat){
+  if (devdat->playing < 0){
+    return;
+  }
+  devdat->playing = -1;
+  pthread_join(devdat->thread, NULL);
   ao_close(devdat->device);
   ao_free_options(devdat->option);
+  free_sample_buffer(devdat->buffer);
   free(devdat->format);
   devdat->device = NULL;
   devdat->option = NULL;
   devdat->format = NULL;
+  devdat->buffer = NULL;
+  return;
 }
 
 /* 
@@ -64,9 +88,10 @@ remove_device(dev_data *devdat)
   dev_data *behind  = NULL;
   dev_data *current = devices;
 
+  close_device(devdat);
+
   /* 先頭にマッチした場合 */
   if (devices == devdat){
-    close_device(devdat);
     /* 次のデータが存在している場合、先頭をそのデータに入れ替える
      存在しない場合先頭をNULLにする */
     if (devices->next != NULL){
@@ -89,7 +114,6 @@ remove_device(dev_data *devdat)
       } else {
 	behind->next = NULL;
       }
-      close_device(devdat);
       free(devdat);
       return;
     }
@@ -97,7 +121,7 @@ remove_device(dev_data *devdat)
     current = current->next;
   }
   /* バグがなければ到達しない */
-  fputs("fatal ao library error.", stderr);
+  fputs("fatal ao library error.\n", stderr);
   exit(1);
   return;
 }

@@ -22,10 +22,19 @@ extern VALUE cAO_eFileError;
 extern VALUE cAO_eFileExists;
 extern VALUE cAO_eBadFormat;
 
+typedef struct sample_buffer {
+  int   bytes;
+  char *samples;
+  struct sample_buffer *next;
+} sample_buffer;
+
 typedef struct dev_data {
   ao_device        *device;
   ao_sample_format *format;
   ao_option        *option;
+  sample_buffer    *buffer;
+  pthread_t         thread;
+  int               playing;
   struct dev_data  *next;
 } dev_data;
 
