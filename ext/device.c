@@ -26,8 +26,7 @@ raodev_initialize(VALUE obj, VALUE rdevdata)
  * (デバイスがファイル出力の場合はファイルに書き出す)
  * 一度に渡せる量はunsigned int(32bit)の範囲まで。
  *
- * [arg1] BasicOutput::BasicDeviceData
- * [arg2] buffer(String)
+ * [arg1] buffer(String)
  * [return] Fixnum
 */
 static VALUE
@@ -55,7 +54,6 @@ raodev_play(VALUE obj, VALUE output_samples)
  *
  * デバイスを閉じる。
  *
- * [arg1] BasicOutput::BasicDeviceData
  * [return] true
 */
 static VALUE
@@ -72,7 +70,6 @@ raodev_close(VALUE obj)
  * call-seq: dev.closed?
  *
  * デバイスが既に閉じられているか確認する。
- * [arg1] BasicOutput::BasicDeviceData
  * [return] true or false
 */
 static VALUE
