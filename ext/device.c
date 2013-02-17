@@ -20,7 +20,7 @@ raodev_initialize(VALUE obj, VALUE rdevdata)
 }
 
 /*
- * call-seq: dev.play(device, output_samples)
+ * call-seq: dev.play(output_samples)
  *
  * 受け取ったサンプルを再生する。
  * (デバイスがファイル出力の場合はファイルに書き出す)
@@ -51,7 +51,7 @@ raodev_play(VALUE obj, VALUE output_samples)
 }
 
 /*
- * call-seq: dev.close(device)
+ * call-seq: dev.close
  *
  * デバイスを閉じる。
  *
@@ -69,7 +69,7 @@ raodev_close(VALUE obj)
 }
 
 /*
- * call-seq: dev.close(device)
+ * call-seq: dev.closed?
  *
  * デバイスが既に閉じられているか確認する。
  * [arg1] BasicOutput::BasicDeviceData
