@@ -5,6 +5,18 @@
 
 static VALUE cAO_cDevice;
 
+typedef struct play_data {
+  ao_device *device;
+  char *samples;
+  uint_32 bytes;
+} play_data;
+
+int nogvl_ao_play(play_data *playdata){
+  return ao_play(playdata->device,
+		 playdata->samples,
+		 playdata->bytes);
+}
+
 /*
  * call-seq: dev = Audio::BasicDevice.new(rdevdata)
  *
@@ -35,17 +47,23 @@ raodev_play(VALUE obj, VALUE output_samples)
   int        result;
   uint32_t   bytes;
   dev_data  *devdata;
-
+  play_data  playdata;
   Check_Type(output_samples, T_STRING);
   Data_Get_Struct(rb_ivar_get(obj, rb_intern("@device")),
 		  dev_data, devdata);
-  bytes = RSTRING_LENINT(output_samples);
-  result = 
-    ao_play(devdata->device,
-	    StringValuePtr(output_samples), bytes);
+  playdata.device  = devdata->device;
+  playdata.samples = StringValuePtr(output_samples);
+  playdata.bytes   = RSTRING_LENINT(output_samples);
+
+#ifdef HAVE_RB_THREAD_CALL_WITHOUT_GVL
+  result = rb_thread_call_without_gvl((rb_blocking_function_t *)nogvl_ao_play, &playdata, NULL, NULL);
+#else
+  result = nogvl_ao_play(&playdata);
+#endif
   if (result == 0){
     rb_raise(cAO_eDeviceError, "Device should be closed.");
   }
+
   return INT2FIX(result);
 }
 

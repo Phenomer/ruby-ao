@@ -208,6 +208,8 @@ rao_open_live(VALUE obj,      VALUE driver_id,
   option = set_option(a_options);
   dev    = ao_open_live(FIX2INT(driver_id), format, option);
   if (dev == NULL){
+    free(format);
+    ao_free_options(option);
     switch(errno){
     case AO_ENODRIVER:
       rb_raise(cAO_eNoDriver,
@@ -294,6 +296,8 @@ rao_open_file(VALUE obj,      VALUE driver_id,
   dev = ao_open_file(FIX2INT(driver_id), StringValuePtr(filename), 
 		     overwrite_int, format, option);
   if (dev == NULL){
+    free(format);
+    ao_free_options(option);
     switch(errno){
     case AO_ENODRIVER:
       rb_raise(cAO_eNoDriver,

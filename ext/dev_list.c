@@ -44,9 +44,15 @@ append_device(ao_device *dev, ao_sample_format *format,
  */
 void
 close_device(dev_data *devdat){
-  ao_close(devdat->device);
-  ao_free_options(devdat->option);
-  free(devdat->format);
+  if (devdat->device != NULL){
+    ao_close(devdat->device);
+  }
+  if (devdat->option != NULL){
+    ao_free_options(devdat->option);
+  }
+  if (devdat->format != NULL){
+    free(devdat->format);
+  }
   devdat->device = NULL;
   devdat->option = NULL;
   devdat->format = NULL;
