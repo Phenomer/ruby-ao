@@ -60,6 +60,7 @@ append_device(ao_device *dev, ao_sample_format *format,
  */
 void
 close_device(dev_data *devdat){
+<<<<<<< local
   if (devdat->playing < 0){
     return;
   }
@@ -69,6 +70,17 @@ close_device(dev_data *devdat){
   ao_free_options(devdat->option);
   free_sample_buffer(devdat->buffer);
   free(devdat->format);
+=======
+  if (devdat->device != NULL){
+    ao_close(devdat->device);
+  }
+  if (devdat->option != NULL){
+    ao_free_options(devdat->option);
+  }
+  if (devdat->format != NULL){
+    free(devdat->format);
+  }
+>>>>>>> other
   devdat->device = NULL;
   devdat->option = NULL;
   devdat->format = NULL;
