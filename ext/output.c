@@ -446,7 +446,7 @@ rao_file_extension(VALUE obj, VALUE driver_id)
   char *ext;
 
   Check_Type(driver_id, T_FIXNUM);
-  ext = ao_file_extension(FIX2INT(driver_id));
+  ext = (char *)ao_file_extension(FIX2INT(driver_id));
   if (ext == NULL){
     rb_raise(cAO_eDriverError,
 	     "This driver has no file extension associated with it or if this driver does not exist.");

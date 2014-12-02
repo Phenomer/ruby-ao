@@ -33,7 +33,6 @@ typedef struct dev_data {
   ao_sample_format *format;
   ao_option        *option;
   sample_buffer    *buffer;
-  pthread_t         thread;
   int               playing;
   struct dev_data  *next;
 } dev_data;

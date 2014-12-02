@@ -1,40 +1,11 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include<pthread.h>
 #include<unistd.h>
 #include "cao.h"
 
 static VALUE cAO_cDevice;
 
-<<<<<<< local
-static void *
-play_thread(dev_data *devdata)
-{
-  sample_buffer *currentbuf;
-  int result;
-
-  while(1){
-    while ((currentbuf = devdata->buffer) == NULL){
-      if (devdata->playing < 0){
-	return NULL;
-      }
-      usleep(100000);
-    }
-    result = ao_play(devdata->device, currentbuf->samples, currentbuf->bytes);
-    if (result == 0){
-      rb_raise(cAO_eDeviceError, "Device should be closed.");
-    }
-    devdata->buffer = devdata->buffer->next;
-    free(currentbuf->samples);
-    free(currentbuf);
-    devdata->playing--;
-  }
-  return NULL;
-}
-
-
-=======
 typedef struct play_data {
   ao_device *device;
   char *samples;
@@ -47,7 +18,6 @@ int nogvl_ao_play(play_data *playdata){
 		 playdata->bytes);
 }
 
->>>>>>> other
 /*
  * call-seq: dev = Audio::BasicDevice.new(rdevdata)
  *
@@ -62,7 +32,6 @@ raodev_initialize(VALUE obj, VALUE rdevdata)
 
   rb_ivar_set(obj, rb_intern("@device"), rdevdata);
   Data_Get_Struct(rdevdata, dev_data, devdata);
-  pthread_create(&devdata->thread, NULL, (void *)play_thread, devdata);
   return Qnil;
 }
 

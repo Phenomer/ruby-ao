@@ -1,6 +1,5 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include<pthread.h>
 #include "cao.h"
 
 static dev_data *devices = NULL;
@@ -60,17 +59,6 @@ append_device(ao_device *dev, ao_sample_format *format,
  */
 void
 close_device(dev_data *devdat){
-<<<<<<< local
-  if (devdat->playing < 0){
-    return;
-  }
-  devdat->playing = -1;
-  pthread_join(devdat->thread, NULL);
-  ao_close(devdat->device);
-  ao_free_options(devdat->option);
-  free_sample_buffer(devdat->buffer);
-  free(devdat->format);
-=======
   if (devdat->device != NULL){
     ao_close(devdat->device);
   }
@@ -80,7 +68,6 @@ close_device(dev_data *devdat){
   if (devdat->format != NULL){
     free(devdat->format);
   }
->>>>>>> other
   devdat->device = NULL;
   devdat->option = NULL;
   devdat->format = NULL;
