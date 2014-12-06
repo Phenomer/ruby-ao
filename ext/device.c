@@ -72,93 +72,6 @@ raodev_play(VALUE obj, VALUE output_samples)
 }
 
 /*
- * call-seq: dev.play_bg(output_samples)
- *
- * 受け取ったサンプルをバックグラウンドで再生する。
- * バックグラウンドで再生されているか否かを確認するには
- * dev.playing?を利用する。
- * (デバイスがファイル出力の場合はファイルに書き出す)
- * 一度に渡せる量はunsigned int(32bit)の範囲まで。
- *
- * [arg1] buffer(String)
- * [return] true or false
-*/
-static VALUE
-raodev_play_bg(VALUE obj, VALUE samples)
-{
-  dev_data      *devdata;
-  sample_buffer *new_buffer;
-  sample_buffer *behind_buffer  = NULL;
-  sample_buffer *current_buffer = NULL;
-
-  if ((new_buffer = malloc(sizeof(sample_buffer))) == NULL){
-    rb_raise(cAO_eUnknownError, "memory allocation failure.");
-  }
-  new_buffer->next = NULL;
-  Check_Type(samples, T_STRING);
-  Data_Get_Struct(rb_ivar_get(obj, rb_intern("@device")),
-		  dev_data, devdata);
-  new_buffer->bytes = RSTRING_LENINT(samples);
-  if ((new_buffer->samples = malloc(new_buffer->bytes)) == NULL){
-    rb_raise(cAO_eUnknownError, "memory allocation failure.");
-  }
-  memcpy(new_buffer->samples, StringValuePtr(samples), new_buffer->bytes);
-  current_buffer = devdata->buffer;
-  while (current_buffer != NULL){
-    behind_buffer  = current_buffer;
-    current_buffer = current_buffer->next;
-  }
-  if(behind_buffer == NULL){
-    devdata->buffer = new_buffer;
-  } else {
-    behind_buffer->next = new_buffer;
-  }
-  devdata->playing++;
-  return Qtrue;
-}
-
-/*
- * call-seq: dev.buffers
- *
- * バックグラウンド再生バッファの長さを返す。
- * 非再生中の場合はnilを返す。
- * [return] FixNum or nil
-*/
-static VALUE
-raodev_buffers(VALUE obj)
-{
-  dev_data *devdata;
-
-  Data_Get_Struct(rb_ivar_get(obj, rb_intern("@device")),
-		  dev_data, devdata);
-  if (devdata->playing < 0){
-    return Qnil;
-  }
-  return INT2FIX(devdata->playing);
-}
-
-/*
- * call-seq: dev.playing?
- *
- * バックグラウンドで再生中であるか否かを確認する。
- *
- * [return] true or false
-*/
-static VALUE
-raodev_playing(VALUE obj)
-{
-  dev_data *devdata;
-
-  Data_Get_Struct(rb_ivar_get(obj, rb_intern("@device")),
-		  dev_data, devdata);
-  if (devdata->playing > 0){
-    return Qtrue;
-  } else {
-    return Qfalse;
-  }
-}
-
-/*
  * call-seq: dev.close
  *
  * デバイスを閉じる。
@@ -200,9 +113,6 @@ void init_cao_device(void){
   cAO_cDevice = rb_define_class_under(cAO, "BasicDevice", rb_cObject);
   rb_define_private_method(cAO_cDevice, "initialize", raodev_initialize, 1);
   rb_define_method(cAO_cDevice, "play",     raodev_play,    1);
-  rb_define_method(cAO_cDevice, "play_bg",  raodev_play_bg, 1);
-  rb_define_method(cAO_cDevice, "buffers",  raodev_buffers, 0);
-  rb_define_method(cAO_cDevice, "playing?", raodev_playing, 0);
   rb_define_method(cAO_cDevice, "close",    raodev_close,   0);
   rb_define_method(cAO_cDevice, "closed?",  raodev_closed,  0);
 }
