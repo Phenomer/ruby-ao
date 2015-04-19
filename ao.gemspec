@@ -10,18 +10,18 @@ Gem::Specification.new do |s|
   s.rdoc_options      = "-m README.rdoc"
   s.files             = ["LICENSE", "README.rdoc", "CHANGELOG.rdoc", 
                          "ext/cao.h", "ext/output.c", 
-                         "ext/dev_list.c", "ext/device.c",
+                         "ext/device.c", "ext/info.c", "ext/option.c",
                          "ext/constant.c", "ext/exception.c",
-                         "ext/extconf.rb", "lib/ao.rb",
+                         "ext/extconf.rb", "lib/audio/output.rb",
                          "example/beeplay.rb", "example/drivers.rb",
                          "example/raw2wav.rb", "example/rawplay.rb"]
   s.extra_rdoc_files  = ["README.rdoc", "CHANGELOG.rdoc",
                          "ext/cao.h", "ext/output.c",
-                         "ext/dev_list.c", "ext/device.c",
-                         "ext/exception.c", "ext/constant.c"]
+                         "ext/device.c", "ext/info.c", "ext/option.c",
+                         "ext/exception.c", "ext/constant.c", "lib/audio/output.rb"]
   s.extensions        = ["ext/extconf.rb"]
   s.require_paths     = ["lib"]
-  s.required_ruby_version = Gem::Requirement.new(">=1.9.1")
+  s.required_ruby_version = Gem::Requirement.new(">=2.1.0")
   s.licenses          = ["GPLv2"]
 end
 

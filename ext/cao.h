@@ -2,12 +2,15 @@
 #define CAO_H
 
 #include <ruby.h>
+#include <ruby/thread.h>
 #include <ao/ao.h>
 #include <ao/os_types.h>
 
 extern VALUE cAudio;
-extern VALUE cAO;
-extern VALUE cAO_cDeviceData;
+extern VALUE cAO_Live;
+extern VALUE cAO_File;
+extern VALUE cAO_Info;
+extern VALUE cAO_DeviceData;
 extern VALUE cAO_eAOError;
 extern VALUE cAO_eDeviceError;
 extern VALUE cAO_eUnknownError;
@@ -34,7 +37,6 @@ typedef struct dev_data {
   ao_option        *option;
   sample_buffer    *buffer;
   int               playing;
-  struct dev_data  *next;
 } dev_data;
 
 dev_data * append_device(ao_device *dev,
@@ -45,5 +47,15 @@ void remove_device(dev_data *devdat);
 
 void init_exception(void);
 void init_constant(void);
-void init_cao_device(void);
+ao_sample_format *
+set_format(VALUE bits, VALUE rate, VALUE channels,
+	   VALUE byte_format, VALUE matrix);
+void free_format(ao_sample_format *format);
+ao_option * set_option(VALUE a_options);
+
+VALUE
+raodev_play(VALUE obj, VALUE output_samples);
+
+VALUE raodev_close(VALUE obj);
+VALUE raodev_closed(VALUE obj);
 #endif

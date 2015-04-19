@@ -4,10 +4,10 @@
 #
 # RAW to WAV converter
 # (bit: 16bit, rate: 44100Hz, channel: 2ch,
-#  endian: Little endian, matrix: default, option: default)
+#  endian: native, matrix: default, option: default)
 #
 
-require 'ao'
+require 'audio/output'
 
 unless ARGV[1]
   puts('ex) ./raw2wav.rb input.raw output.wav')
@@ -16,14 +16,13 @@ end
 
 input  = ARGV[0]
 output = ARGV[1]
-ao = Audio::Output.new
-if File.file?(input)
-    ao.open_file(ao.driver_id('wav'), output){|dev|
-      File.open(input){|f|
-        while buffer = f.read(4096)
-          dev.play(buffer)
-        end
-      }
-    }
-end
-
+ao = 
+raise unless File.file?(input)
+Audio::FileOutput.new(driver_id: Audio::Info.driver_id('wav'),
+                      filename: output){|ao|
+  File.open(input){|f|
+    while buffer = f.read(4096)
+      ao.play(buffer)
+    end
+  }
+}

@@ -1,7 +1,8 @@
 #include "cao.h"
 
 VALUE cAudio;
-VALUE cAO;
+VALUE cAO_Live;
+VALUE cAO_File;
 VALUE cAO_eAOError;
 VALUE cAO_eNoDriver;
 VALUE cAO_eNotFile;
@@ -17,93 +18,93 @@ VALUE cAO_eUnknownError;
 void init_exception(void)
 {
   /*
-   * Document-class: Audio::BasicOutput::Error
+   * Document-class: Audio::LiveOutput::Error
    *
    * Audio::BasicOutputに関するエラーは
    * Audio::BasicOutput::Errorを継承する。
    */
   cAO_eAOError =
-    rb_define_class_under(cAO, "Error", rb_eStandardError);
+    rb_define_class_under(cAO_Live, "Error", rb_eStandardError);
 
   /*
-   * Document-class: Audio::BasicOutput::NoDriver
+   * Document-class: Audio::LiveOutput::NoDriver
    *
    * ドライバが見つからない時に発生する。
    */
   cAO_eNoDriver =
-    rb_define_class_under(cAO, "NoDriver",     cAO_eAOError);
+    rb_define_class_under(cAO_Live, "NoDriver",     cAO_eAOError);
 
   /*
-   * Document-class: Audio::BasicOutput::NotFile
+   * Document-class: Audio::LiveOutput::NotFile
    *
    * ドライバがファイル出力用のものではない時に発生する。
    */
   cAO_eNotFile =
-    rb_define_class_under(cAO, "NotFile",      cAO_eAOError);
+    rb_define_class_under(cAO_Live, "NotFile",      cAO_eAOError);
 
   /*
-   * Document-class: Audio::BasicOutput::NotLive
+   * Document-class: Audio::LiveOutput::NotLive
    *
    * ドライバがデバイス出力用のものではない時に発生する。
    */
   cAO_eNotLive =
-    rb_define_class_under(cAO, "NotLive",      cAO_eAOError);
+    rb_define_class_under(cAO_Live, "NotLive",      cAO_eAOError);
 
   /*
-   * Document-class: Audio::BasicOutput::BadOption
+   * Document-class: Audio::LiveOutput::BadOption
    *
    * ドライバに設定したオプションの値が不正である時に発生する。
    */
   cAO_eBadOption =
-    rb_define_class_under(cAO, "BadOption",    cAO_eAOError);
+    rb_define_class_under(cAO_Live, "BadOption",    cAO_eAOError);
 
   /*
-   * Document-class: Audio::BasicOutput::DriverError
+   * Document-class: Audio::LiveOutput::DriverError
    *
    * ドライバに関するエラー。
    */
   cAO_eDriverError =
-    rb_define_class_under(cAO, "DriverError",  cAO_eAOError);
+    rb_define_class_under(cAO_Live, "DriverError",  cAO_eAOError);
 
   /* 
-   * Document-class: Audio::BasicOutput::DeviceError
+   * Document-class: Audio::LiveOutput::DeviceError
    *
    * デバイスに関するエラー。
    */
   cAO_eDeviceError =
-    rb_define_class_under(cAO, "DeviceError",  cAO_eAOError);
+    rb_define_class_under(cAO_Live, "DeviceError",  cAO_eAOError);
 
   /*
-   * Document-class: Audio::BasicOutput::FileError
+   * Document-class: Audio::FileOutput::FileError
    *
    * ファイル出力に関するエラー。
    */
   cAO_eFileError =
-    rb_define_class_under(cAO, "FileError",    cAO_eAOError);
+    rb_define_class_under(cAO_File, "FileError",    cAO_eAOError);
 
   /* 
-   * Document-class: Audio::BasicOutput::FileExists
+   * Document-class: Audio::FileOutput::FileExists
    *
    * ファイル出力時の上書き禁止が設定されている時に
    * 既にファイルが存在する場合に発生する。
    */
   cAO_eFileExists =
-    rb_define_class_under(cAO, "FileExists",   cAO_eAOError);
+    rb_define_class_under(cAO_File, "FileExists",   cAO_eAOError);
 
   /*
-   * Document-class: Audio::BasicOutput::Badformat
+   * Document-class: Audio::FileOutput::Badformat
    *
    * オーディオ出力フォーマットが不正である場合発生する。
    */
   cAO_eBadFormat =
-    rb_define_class_under(cAO, "BadFormat",    cAO_eAOError);
+    rb_define_class_under(cAO_File, "BadFormat",    cAO_eAOError);
 
   /* 
-   * Document-class: Audio::BasicOutput::UnknownError
+   * Document-class: Audio::LiveOutput::UnknownError
    *
    * 不明なエラー。
    */
   cAO_eUnknownError =
-    rb_define_class_under(cAO, "UnknownError", cAO_eAOError);
+    rb_define_class_under(cAO_Live, "UnknownError", cAO_eAOError);
   return;
 }

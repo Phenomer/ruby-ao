@@ -5,7 +5,7 @@
 # Beep Keyboard
 #
 
-require 'ao'
+require 'audio/output'
 require 'io/console'
 
 def gen_sample(freq, volume=0.5, sec=0.1, rate=44100)
@@ -26,12 +26,11 @@ freqlist = {
   'A' => 880.00, 'B' => 987.77
 }
 
-ao = Audio::Output.new
-ao.open_live{|dev|
-  dev.play(gen_sample(freqlist['B'])+gen_sample(freqlist['E']))
+Audio::LiveOutput.new{|ao|
+  ao.play(gen_sample(freqlist['B'])+gen_sample(freqlist['E']))
   IO.console.noecho{|io|
     while freq = freqlist[io.getch]
-      dev.play(gen_sample(freq))
+      ao.play(gen_sample(freq))
     end
   }
 }

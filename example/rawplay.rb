@@ -3,19 +3,20 @@
 
 #
 # Simple RAW Audio Player
-# (bit: 16bit, rate: 44100Hz, channel: 2ch,
-#  endian: Little endian, matrix: default, option: default)
+# (bits: 16bit, rate: 44100Hz, channels: 2ch,
+#  byte_format: Little endian,
+#  matrix: default, option: default)
 #
 
-require 'ao'
+require 'audio/output'
 
-ao = Audio::Output.new
 ARGV.each{|file|
   if File.file?(file)
-    ao.open_live{|dev|
+    Audio::LiveOutput.new(bits: 16, rate: 44100, channels: 2,
+                          byte_format: Audio::Info::FMT_LITTLE){|ao|
       File.open(file){|f|
         while buffer = f.read(4096)
-          dev.play(buffer)
+          ao.play(buffer)
         end
       }
     }
