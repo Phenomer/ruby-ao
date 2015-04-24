@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name              = "ao"
-  s.version           = "0.0.3"
+  s.version           = "0.0.4"
   s.summary           = "simple & cross platform audio output library"
   s.description       = "simple & cross platform audio output library(libao binding http://http://xiph.org/ao/)"
   s.author            = "Akito Miura"
@@ -22,6 +22,6 @@ Gem::Specification.new do |s|
   s.extensions        = ["ext/extconf.rb"]
   s.require_paths     = ["lib"]
   s.required_ruby_version = Gem::Requirement.new(">=2.1.0")
-  s.licenses          = ["GPLv2"]
+  s.licenses          = ["MIT"]
 end
 

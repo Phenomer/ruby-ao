@@ -41,4 +41,4 @@ ruby-aoはgemコマンドを用いてインストールできます。
   :include: example/drivers.rb
 
 == ライセンス
-GPLv2
+MIT License
