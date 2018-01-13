@@ -10,6 +10,7 @@ Gem::Specification.new do |s|
   s.rdoc_options      = "-m README.rdoc"
   s.files             = ["LICENSE", "README.rdoc", "CHANGELOG.rdoc", "Rakefile",
                          "ext/audio/cao.h", "ext/audio/output.c", 
+                         "ext/audio/live.c", "ext/audio/file.c", 
                          "ext/audio/device.c", "ext/audio/info.c", "ext/audio/option.c",
                          "ext/audio/constant.c", "ext/audio/exception.c",
                          "ext/audio/extconf.rb", "lib/audio/output.rb",

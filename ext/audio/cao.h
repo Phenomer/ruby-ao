@@ -36,7 +36,6 @@ typedef struct dev_data {
   ao_sample_format *format;
   ao_option        *option;
   sample_buffer    *buffer;
-  int               playing;
 } dev_data;
 
 dev_data * append_device(ao_device *dev,
@@ -58,4 +57,17 @@ raodev_play(VALUE obj, VALUE output_samples);
 
 VALUE raodev_close(VALUE obj);
 VALUE raodev_closed(VALUE obj);
+
+VALUE
+rao_open_live(VALUE obj,      VALUE driver_id,
+	      VALUE bits, VALUE rate, VALUE channels,
+	      VALUE byte_format, VALUE matrix,
+	      VALUE a_options);
+VALUE
+rao_open_file(VALUE obj,      VALUE driver_id,
+	      VALUE filename, VALUE overwrite,
+	      VALUE bits, VALUE rate, VALUE channels,
+	      VALUE byte_format, VALUE matrix,
+	      VALUE a_options);
+
 #endif

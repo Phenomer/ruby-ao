@@ -32,7 +32,6 @@ append_device(ao_device *dev, ao_sample_format *format,
   newdev->device  = dev;
   newdev->format  = format;
   newdev->option  = option;
-  newdev->playing = 0;
   newdev->buffer  = NULL;
   return newdev;
 }
