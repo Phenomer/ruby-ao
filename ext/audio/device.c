@@ -64,7 +64,6 @@ close_device(ao_struct *aos){
     free(sample->buffer);
     free(sample);
   }
-
   pthread_join(aos->thread, NULL);
   return;
 }

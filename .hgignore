@@ -8,6 +8,6 @@ syntax: glob
 *.raw
 *.ogg
 *.mp3
-ext/Makefile
-ext/mkmf.log
+ext/audio/Makefile
+ext/audio/mkmf.log
 

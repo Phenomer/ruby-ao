@@ -8,6 +8,7 @@ VALUE cAudio;
 VALUE cAO_Live;
 VALUE cAO_File;
 VALUE cAO_Info;
+VALUE cAO_Mixer;
 VALUE cAO_DeviceData;
 VALUE cAO_eAOError;
 VALUE cAO_eDeviceError;
@@ -72,7 +73,7 @@ Init_outputc(void)
    *
    * オーディオデバイス出力機能をサポートするクラス。
    */
-  cAO_Live = rb_define_class_under(cAudio, "LiveOutput", rb_cObject);
+  cAO_Live = rb_define_class_under(cAudio, "LiveOutputC", rb_cObject);
   rb_cv_set(cAO_Live, "@@devices", rb_ary_new());
   
   /*
@@ -98,11 +99,12 @@ Init_outputc(void)
    *
    * オーディオファイル出力機能をサポートするクラス。
    */
-  cAO_File = rb_define_class_under(cAudio, "FileOutput", cAO_Live);
+  cAO_File = rb_define_class_under(cAudio, "FileOutputC", cAO_Live);
   rb_define_private_method(cAO_File, "initialize", rao_open_file, 9);
 
   init_exception();
   init_info();
+  init_mixer();
   init_constant();
   init_option();
 

@@ -11,6 +11,7 @@ extern VALUE cAudio;
 extern VALUE cAO_Live;
 extern VALUE cAO_File;
 extern VALUE cAO_Info;
+extern VALUE cAO_Mixer;
 extern VALUE cAO_DeviceData;
 extern VALUE cAO_eAOError;
 extern VALUE cAO_eDeviceError;
@@ -56,6 +57,7 @@ typedef struct ao_struct {
 
 void init_info(void);
 void init_option(void);
+void init_mixer(void);
 void close_device(ao_struct *aos);
 void remove_device(ao_struct *aos);
 
