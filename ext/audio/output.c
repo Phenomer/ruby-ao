@@ -4,20 +4,35 @@
 #include <errno.h>
 #include "cao.h"
 
+VALUE cAudio;
+VALUE cAO_Live;
+VALUE cAO_File;
+VALUE cAO_Info;
+VALUE cAO_DeviceData;
+VALUE cAO_eAOError;
+VALUE cAO_eDeviceError;
+VALUE cAO_eUnknownError;
+
+VALUE cAO_eNoDriver;
+VALUE cAO_eNotFile;
+VALUE cAO_eNotLive;
+VALUE cAO_eBadOption;
+VALUE cAO_eDriverError;
+
 VALUE
 rao_close(VALUE obj)
 {
-  dev_data *devdata;
+  ao_struct *aos;
 
   if (rb_iv_get(obj, "@device") == Qnil){
     return Qfalse;
   }
   
   Data_Get_Struct(rb_iv_get(obj, "@device"),
-		  dev_data, devdata);
-  close_device(devdata);
+		  ao_struct, aos);
+  close_device(aos);
   rb_ary_delete(rb_cv_get(cAO_Live, "@@devices"), rb_intern("@device"));
-  rb_iv_set(obj, "@device", Qnil);
+  /*rb_iv_set(obj, "@device", Qnil);*/
   return Qtrue;
 }
 
@@ -30,12 +45,12 @@ rao_close(VALUE obj)
 void
 rao_shutdown(VALUE obj){
   VALUE rdev;
-  dev_data *devdata;
+  ao_struct *aos;
   
   rb_gc_start();
   while ((rdev = rb_ary_pop(rb_cv_get(cAO_Live, "@@devices"))) != Qnil){
-    Data_Get_Struct(rdev, dev_data, devdata);
-    close_device(devdata);
+    Data_Get_Struct(rdev, ao_struct, aos);
+    close_device(aos);
   }
   ao_shutdown();
   return;
@@ -57,7 +72,7 @@ Init_outputc(void)
    *
    * オーディオデバイス出力機能をサポートするクラス。
    */
-  cAO_Live = rb_define_class_under(cAudio, "LiveOutputC", rb_cObject);
+  cAO_Live = rb_define_class_under(cAudio, "LiveOutput", rb_cObject);
   rb_cv_set(cAO_Live, "@@devices", rb_ary_new());
   
   /*
@@ -75,13 +90,15 @@ Init_outputc(void)
   rb_define_method(cAO_Live, "close",   rao_close,     0);
   rb_define_method(cAO_Live, "play",    raodev_play,   1);
   rb_define_method(cAO_Live, "closed?", raodev_closed, 0);
+  rb_define_method(cAO_Live, "playing?", raodev_playing, 0);
+  rb_define_method(cAO_Live, "waiting", raodev_waiting, 0);
 
   /*
    * Document-class: Audio::FileOutput
    *
    * オーディオファイル出力機能をサポートするクラス。
    */
-  cAO_File = rb_define_class_under(cAudio, "FileOutputC", cAO_Live);
+  cAO_File = rb_define_class_under(cAudio, "FileOutput", cAO_Live);
   rb_define_private_method(cAO_File, "initialize", rao_open_file, 9);
 
   init_exception();
