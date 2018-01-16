@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <time.h>
+#include <signal.h>
 #include "cao.h"
 #include "queue.h"
 #include "thread.h"
@@ -14,7 +15,7 @@ thread_player(void *val){
   queue res;
   ao_struct *aos = val;
   sample_t *sample;
-  struct timespec tout = {0, 100000};
+  struct timespec tout = {0, 1000000};
 
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
   /*assert(pthread_detach(pthread_self()) == 0);*/
@@ -43,8 +44,13 @@ thread_player(void *val){
       }
       assert(pthread_mutex_unlock(&aos->mutex) == 0);
     }
+
     assert(pthread_mutex_lock(&aos->mutex) == 0);
-    aos->status = 1;
+    if (aos->status == 2){
+      aos->status = 1;
+      assert(pthread_mutex_unlock(&aos->mutex) == 0);
+      break;
+    }
     assert(pthread_mutex_unlock(&aos->mutex) == 0);
   }
 
