@@ -5,7 +5,7 @@
 #include <errno.h>
 #include "cao.h"
 
-static sample_t *
+int
 mix_sample_8(sample_t **samples,  sample_t *ret, int chs){
   int32_t sum;
   int ch;
@@ -22,12 +22,12 @@ mix_sample_8(sample_t **samples,  sample_t *ret, int chs){
 	sum += src[pos];
       }
     }
-    ret->buffer[pos] = (int8_t)(sum / chs);
+    buffer[pos] = (int8_t)(sum / chs);
   }
-  return ret;
+  return 1;
 }
 
-static sample_t *
+int
 mix_sample_16(sample_t **samples, sample_t *ret, int chs){
   int32_t sum;
   int ch;
@@ -47,10 +47,10 @@ mix_sample_16(sample_t **samples, sample_t *ret, int chs){
     buffer[pos] = (int16_t)(sum / chs);
   }
 
-  return ret;
+  return 1;
 }
 
-static sample_t *
+int
 mix_sample(int bits, sample_t **samples,
 	   sample_t *ret, int chs){
   if (bits == 8){
@@ -58,7 +58,7 @@ mix_sample(int bits, sample_t **samples,
   } else if(bits == 16){
     return mix_sample_16(samples, ret, chs);
   } else {
-    return NULL;
+    return -1;
   }
 }
 
@@ -66,7 +66,8 @@ VALUE
 rao_mix_samples(VALUE obj, VALUE bits, VALUE rsamples){
   VALUE rsample;
   sample_t **samples;
-  sample_t *ret;
+  sample_t ret;
+  int stat;
   int chs = 0;
   int maxlen = 0;
 
@@ -88,16 +89,17 @@ rao_mix_samples(VALUE obj, VALUE bits, VALUE rsamples){
     chs++;
     samples = realloc(samples, sizeof(sample_t *) * chs);
   }
-  ret = malloc(sizeof(sample_t));
-  ret->bytes  = sizeof(char) * maxlen;
-  ret->buffer = malloc(ret->bytes);
-  ret = mix_sample(FIX2INT(bits), samples, ret, chs);
+
+  ret.bytes  = sizeof(char) * maxlen;
+  ret.buffer = malloc(ret.bytes);
+  stat = mix_sample(FIX2INT(bits), samples, &ret, chs);
   free(samples);
-  if (ret == NULL){
+  if (stat == -1){
     rb_raise(cAO_eAOError, "Unsupported format.");
     return Qnil;
   }
-  rsample = rb_str_new(ret->buffer, ret->bytes);
+  rsample = rb_str_new(ret.buffer, ret.bytes);
+  free(ret.buffer);
   return rsample;
 }
 
