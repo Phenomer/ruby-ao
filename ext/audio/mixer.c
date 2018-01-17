@@ -62,6 +62,17 @@ mix_sample(int bits, sample_t **samples,
   }
 }
 
+/*
+ * call-seq: Audio::Mixer.mix(samples)
+ *
+ * 複数のオーディオサンプルをMixする。
+ * samplesには、Mix対象のデータ(String)の配列を入れる。
+ * 8bitまたは16bitのみ対応
+ *
+ * [arg1] bits(8 or 16)
+ * [arg2] samples([sample1, sample2, ...])
+ * [return] Mixed string
+ */
 VALUE
 rao_mix_samples(VALUE obj, VALUE bits, VALUE rsamples){
   VALUE rsample;
