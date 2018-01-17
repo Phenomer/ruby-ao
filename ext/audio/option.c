@@ -18,7 +18,7 @@ set_format(VALUE bits, VALUE rate, VALUE channels,
 {
   ao_sample_format *format;
   size_t len;
-  
+
   if ((format = malloc(sizeof(ao_sample_format))) == NULL){
     rb_raise(cAO_eUnknownError, "memory allocation failure.");
   }
@@ -70,7 +70,7 @@ set_option(VALUE a_options)
   ao_option *option = NULL;
   int   pos, result;
   VALUE element, key, value;
-  
+
   switch(TYPE(a_options)){
   case T_ARRAY:
     for (pos=0; pos<RARRAY_LEN(a_options); pos++){

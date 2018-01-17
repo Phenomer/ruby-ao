@@ -9,7 +9,7 @@ class Audio::LiveOutput < Audio::LiveOutputC
         bits: 16, rate: 44100, channels: 2,
         byte_format:
           Audio::Info::FMT_NATIVE,
-        matrix: nil, options: nil)
+        matrix: nil, options: nil, thread: nil)
     ao = super(driver_id, bits, rate, channels,
                byte_format, matrix, options)
     if block_given?
@@ -30,7 +30,7 @@ class Audio::FileOutput < Audio::FileOutputC
         bits: 16, rate: 44100, channels: 2,
         byte_format:
           Audio::Info::FMT_NATIVE,
-        matrix: nil, options: nil)
+        matrix: nil, options: nil, thread: nil)
     ao = super(driver_id, filename, overwrite,
                bits, rate, channels, byte_format,
                matrix, options)

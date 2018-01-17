@@ -10,7 +10,7 @@ rao_open_file_dev(int driver_id, char *filename,
 		  int overwrite, ao_sample_format *format,
 		  ao_option *option){
   ao_device *dev;
-  
+
   dev = ao_open_file(driver_id, filename,
 		     overwrite, format, option);
   if (dev == NULL){
@@ -74,6 +74,7 @@ rao_open_file_dev(int driver_id, char *filename,
  * [arg7] byte_format(fixnum)
  * [arg8] matrix(String or nil)
  * [arg9] options(Array or nil)
+ * [arg10] thread(true or false)
  * [return] self
  */
 VALUE
@@ -81,7 +82,7 @@ rao_open_file(VALUE obj,      VALUE driver_id,
 	      VALUE filename, VALUE overwrite,
 	      VALUE bits, VALUE rate, VALUE channels,
 	      VALUE byte_format, VALUE matrix,
-	      VALUE a_options)
+	      VALUE a_options, VALUE thread)
 {
   ao_struct        *aos;
   ao_device        *dev;
@@ -105,15 +106,22 @@ rao_open_file(VALUE obj,      VALUE driver_id,
   format = set_format(bits, rate, channels, byte_format, matrix);
   option = set_option(a_options);
   dev = rao_open_file_dev(FIX2INT(driver_id), StringValuePtr(filename), overwrite_int, format, option);
-  if ((aos = create_thread(dev, format, option)) == NULL){
+  if ((aos = init_aos(dev, format, option)) == NULL){
     rb_raise(cAO_eUnknownError,
 	     "memory allocation failure - %s",
 	     strerror(errno));
+  }
+  if (TYPE(thread) == T_TRUE){
+    if ((aos = create_thread(aos)) == NULL){
+      rb_raise(cAO_eUnknownError,
+	       "memory allocation failure - %s",
+	       strerror(errno));
+    }
   }
   rdev = Data_Wrap_Struct(cAO_DeviceData, 0,
 			  remove_device, aos);
   rb_iv_set(obj, "@device", rdev);
   rb_ary_push(rb_cv_get(cAO_File, "@@devices"), rdev);
-    
+
   return obj;
 }

@@ -68,13 +68,14 @@ rao_open_live_dev(int driver_id,
  * [arg5] byte_format(fixnum)
  * [arg6] matrix(String or nil)
  * [arg7] options(Array or nil)
+ * [arg8] thread(true or false)
  * [return] self
  */
 VALUE
 rao_open_live(VALUE obj,      VALUE driver_id,
 	      VALUE bits, VALUE rate, VALUE channels,
 	      VALUE byte_format, VALUE matrix,
-	      VALUE a_options)
+	      VALUE a_options, VALUE thread)
 {
   ao_struct        *aos;
   ao_device        *dev;
@@ -93,10 +94,17 @@ rao_open_live(VALUE obj,      VALUE driver_id,
   option = set_option(a_options);
 
   dev = rao_open_live_dev(FIX2INT(driver_id), format, option);
-  if ((aos = create_thread(dev, format, option)) == NULL){
+  if ((aos = init_aos(dev, format, option)) == NULL){
     rb_raise(cAO_eUnknownError,
 	     "memory allocation failure - %s",
 	     strerror(errno));
+  }
+  if (TYPE(thread) == T_TRUE){
+    if ((aos = create_thread(aos)) == NULL){
+      rb_raise(cAO_eUnknownError,
+	       "memory allocation failure - %s",
+	       strerror(errno));
+    }
   }
   rdev = Data_Wrap_Struct(cAO_DeviceData, 0,
 			  remove_device, aos);

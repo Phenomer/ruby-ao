@@ -58,6 +58,9 @@ typedef struct ao_struct {
 void init_info(void);
 void init_option(void);
 void init_mixer(void);
+ao_struct *init_aos(ao_device *dev,
+		    ao_sample_format *format,
+		    ao_option *option);
 void close_device(ao_struct *aos);
 void remove_device(ao_struct *aos);
 
@@ -81,11 +84,11 @@ VALUE
 rao_open_live(VALUE obj,      VALUE driver_id,
 	      VALUE bits, VALUE rate, VALUE channels,
 	      VALUE byte_format, VALUE matrix,
-	      VALUE a_options);
+	      VALUE a_options, VALUE thread);
 VALUE
 rao_open_file(VALUE obj,      VALUE driver_id,
 	      VALUE filename, VALUE overwrite,
 	      VALUE bits, VALUE rate, VALUE channels,
 	      VALUE byte_format, VALUE matrix,
-	      VALUE a_options);
+	      VALUE a_options, VALUE thread);
 #endif

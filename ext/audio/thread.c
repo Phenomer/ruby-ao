@@ -78,17 +78,8 @@ thread_player(void *val){
 }
 
 ao_struct *
-create_thread(ao_device *dev, ao_sample_format *format,
-	      ao_option *option){
-  ao_struct *aos;
-
-  aos          = ALLOC(ao_struct);
-  aos->device  = dev;
-  aos->format  = format;
-  aos->option  = option;
-  aos->queue   = NULL;
-  aos->status  = 1;
-  aos->qsize   = 0;
+create_thread(ao_struct *aos){
+  aos->thread = 1;
   assert(pthread_mutex_init(&aos->mutex, NULL) == 0);
   assert(pthread_cond_init(&aos->cond, NULL) == 0);
   assert(pthread_create(&aos->thread, NULL,

@@ -7,21 +7,56 @@
 #include "cao.h"
 #include "queue.h"
 
+typedef struct aos_gvl {
+  ao_struct *aos;
+  sample_t   sample;
+  int        res;
+} aos_gvl;
+
+void *nogvl_ao_play(void *dat){
+  aos_gvl *aosg = (aos_gvl *)dat;
+
+  aosg->res =
+    ao_play(aosg->aos->device,
+	    aosg->sample.buffer,
+	    aosg->sample.bytes);
+  return NULL;
+}
+
+ao_struct *
+init_aos(ao_device *dev, ao_sample_format *format,
+	 ao_option *option){
+  ao_struct *aos;
+
+  aos          = ALLOC(ao_struct);
+  aos->device  = dev;
+  aos->format  = format;
+  aos->option  = option;
+  aos->queue   = NULL;
+  aos->status  = 1;
+  aos->qsize   = 0;
+  aos->thread  = 0;
+  return aos;
+}
+
 /*
  * call-seq: ao.play(output_samples)
  *
- * 受け取ったサンプルを再生キューに追加する。
+ * 受け取ったサンプルを再生する。
+ * threadが有効の場合、受け取ったサンプルを
+ * 再生キューに追加する。
  * (デバイスがファイル出力の場合はファイルに書き出す)
  * 一度に渡せる量はunsigned int(32bit)の範囲まで。
  *
  * [arg1] buffer(String)
  * [return] Fixnum
-*/
+ */
 VALUE
 raodev_play(VALUE obj, VALUE output_samples)
 {
-  sample_t *sample;
+  sample_t  *sample;
   ao_struct *aos;
+  aos_gvl    aosg;
 
   Check_Type(output_samples, T_STRING);
   if (rb_ivar_get(obj, rb_intern("@device")) == Qnil){
@@ -37,7 +72,19 @@ raodev_play(VALUE obj, VALUE output_samples)
     rb_raise(cAO_eAOError, "Memory allocation failure.");
   }
   memcpy(sample->buffer, StringValuePtr(output_samples), sample->bytes);
-  enqueue(aos, sample);
+
+  if (aos->thread == 1){
+    enqueue(aos, sample);
+  } else {
+    aosg.aos = aos;
+    aosg.sample = *sample;
+#ifdef HAVE_RB_THREAD_CALL_WITHOUT_GVL
+    rb_thread_call_without_gvl2(nogvl_ao_play, &aosg, NULL, NULL);
+#else
+    nogvl_ao_play(&aosg);
+#endif
+    free(sample->buffer);
+  }
   return obj;
 }
 
@@ -53,18 +100,34 @@ close_device(ao_struct *aos){
   int i;
   sample_t *sample;
 
-  assert(pthread_mutex_lock(&aos->mutex) == 0);
-  if (aos->status > 0){
-    aos->status = 0;
-  }
-  assert(pthread_cond_signal(&aos->cond) == 0);
-  assert(pthread_mutex_unlock(&aos->mutex) == 0);
+  if (aos->thread == 1){
+    assert(pthread_mutex_lock(&aos->mutex) == 0);
+    if (aos->status > 0){
+      aos->status = 0;
+    }
+    assert(pthread_cond_signal(&aos->cond) == 0);
+    assert(pthread_mutex_unlock(&aos->mutex) == 0);
 
-  while ((sample = dequeue(aos)) != NULL){
-    free(sample->buffer);
-    free(sample);
+    while ((sample = dequeue(aos)) != NULL){
+      free(sample->buffer);
+      free(sample);
+    }
+    pthread_join(aos->thread, NULL);
+  } else {
+    if (aos->device != NULL){
+      ao_close(aos->device);
+    }
+    if (aos->option != NULL){
+      ao_free_options(aos->option);
+    }
+    if (aos->format != NULL){
+      free_format(aos->format);
+    }
+    aos->device = NULL;
+    aos->option = NULL;
+    aos->format = NULL;
+    aos->queue  = NULL;
   }
-  pthread_join(aos->thread, NULL);
   return;
 }
 
@@ -87,7 +150,7 @@ remove_device(ao_struct *aos)
  *
  * デバイスが既に閉じられているか確認する。
  * [return] true or false
-*/
+ */
 VALUE
 raodev_closed(VALUE obj)
 {
@@ -104,15 +167,16 @@ raodev_closed(VALUE obj)
  * call-seq: ao.playing?
  *
  * デバイスがオーディオを出力中か確認する。
+ * (threadを有効にしていない場合、常にfalse)
  * [return] true or false
-*/
+ */
 VALUE
 raodev_playing(VALUE obj)
 {
   ao_struct *aos;
   Data_Get_Struct(rb_ivar_get(obj, rb_intern("@device")),
 		  ao_struct, aos);
-  if (aos->status == 2){
+  if (aos->thread == 1 && aos->status == 2){
     return Qtrue;
   }
   return Qfalse;
@@ -122,13 +186,17 @@ raodev_playing(VALUE obj)
  * call-seq: ao.waiting
  *
  * 再生キューの待ち数を返す。
+ * (threadを有効にしていない場合、常に0)
  * [return] Integer
-*/
+ */
 VALUE
 raodev_waiting(VALUE obj)
 {
   ao_struct *aos;
   Data_Get_Struct(rb_ivar_get(obj, rb_intern("@device")),
 		  ao_struct, aos);
-  return INT2FIX(aos->qsize);
+  if (aos->thread == 1){
+    return INT2FIX(aos->qsize);
+  }
+  return 0;
 }

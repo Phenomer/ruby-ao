@@ -28,7 +28,7 @@ rao_close(VALUE obj)
   if (rb_iv_get(obj, "@device") == Qnil){
     return Qfalse;
   }
-  
+
   Data_Get_Struct(rb_iv_get(obj, "@device"),
 		  ao_struct, aos);
   close_device(aos);
@@ -47,7 +47,7 @@ void
 rao_shutdown(VALUE obj){
   VALUE rdev;
   ao_struct *aos;
-  
+
   rb_gc_start();
   while ((rdev = rb_ary_pop(rb_cv_get(cAO_Live, "@@devices"))) != Qnil){
     Data_Get_Struct(rdev, ao_struct, aos);
@@ -75,7 +75,7 @@ Init_outputc(void)
    */
   cAO_Live = rb_define_class_under(cAudio, "LiveOutputC", rb_cObject);
   rb_cv_set(cAO_Live, "@@devices", rb_ary_new());
-  
+
   /*
    * Document-class: Audio::BasicOutput::DeviceData
    *
