@@ -195,8 +195,5 @@ raodev_waiting(VALUE obj)
   ao_struct *aos;
   Data_Get_Struct(rb_ivar_get(obj, rb_intern("@device")),
 		  ao_struct, aos);
-  if (aos->thread == 1){
-    return INT2FIX(aos->qsize);
-  }
-  return 0;
+  return INT2FIX(aos->qsize);
 }

@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name              = "ao"
-  s.version           = "0.1.0"
+  s.version           = "0.1.1"
   s.summary           = "simple & cross platform audio output library"
   s.description       = "simple & cross platform audio output library(libao binding http://http://xiph.org/ao/)"
   s.author            = "Akito Miura"
