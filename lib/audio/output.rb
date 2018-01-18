@@ -11,7 +11,7 @@ class Audio::LiveOutput < Audio::LiveOutputC
           Audio::Info::FMT_NATIVE,
         matrix: nil, options: nil, thread: nil)
     ao = super(driver_id, bits, rate, channels,
-               byte_format, matrix, options)
+               byte_format, matrix, options, thread)
     if block_given?
       begin
         yield ao
@@ -33,7 +33,7 @@ class Audio::FileOutput < Audio::FileOutputC
         matrix: nil, options: nil, thread: nil)
     ao = super(driver_id, filename, overwrite,
                bits, rate, channels, byte_format,
-               matrix, options)
+               matrix, options, thread)
     if block_given?
       begin
         yield ao

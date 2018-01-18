@@ -85,7 +85,7 @@ Init_outputc(void)
   cAO_DeviceData = rb_define_class_under(cAO_Live, "DeviceData", rb_cData);
 
   /* library initialize & shutdown */
-  rb_define_private_method(cAO_Live, "initialize", rao_open_live, 7);
+  rb_define_private_method(cAO_Live, "initialize", rao_open_live, 8);
 
   /* device setup */
   rb_define_method(cAO_Live, "close",   rao_close,     0);
@@ -100,7 +100,7 @@ Init_outputc(void)
    * オーディオファイル出力機能をサポートするクラス。
    */
   cAO_File = rb_define_class_under(cAudio, "FileOutputC", cAO_Live);
-  rb_define_private_method(cAO_File, "initialize", rao_open_file, 9);
+  rb_define_private_method(cAO_File, "initialize", rao_open_file, 10);
 
   init_exception();
   init_info();
