@@ -52,6 +52,7 @@ typedef struct ao_struct {
   pthread_mutex_t   mutex;
   pthread_cond_t    cond;
   int               status;
+  int               tmode;
 } ao_struct;
 
 

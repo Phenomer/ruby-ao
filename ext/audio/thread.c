@@ -79,7 +79,7 @@ thread_player(void *val){
 
 ao_struct *
 create_thread(ao_struct *aos){
-  aos->thread = 1;
+  aos->tmode = 1;
   assert(pthread_mutex_init(&aos->mutex, NULL) == 0);
   assert(pthread_cond_init(&aos->cond, NULL) == 0);
   assert(pthread_create(&aos->thread, NULL,

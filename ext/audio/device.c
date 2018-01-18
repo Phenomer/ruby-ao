@@ -35,7 +35,7 @@ init_aos(ao_device *dev, ao_sample_format *format,
   aos->queue   = NULL;
   aos->status  = 1;
   aos->qsize   = 0;
-  aos->thread  = 0;
+  aos->tmode   = 0;
   return aos;
 }
 
@@ -73,7 +73,7 @@ raodev_play(VALUE obj, VALUE output_samples)
   }
   memcpy(sample->buffer, StringValuePtr(output_samples), sample->bytes);
 
-  if (aos->thread == 1){
+  if (aos->tmode == 1){
     enqueue(aos, sample);
   } else {
     aosg.aos = aos;
@@ -100,7 +100,7 @@ close_device(ao_struct *aos){
   int i;
   sample_t *sample;
 
-  if (aos->thread == 1){
+  if (aos->tmode == 1){
     assert(pthread_mutex_lock(&aos->mutex) == 0);
     if (aos->status > 0){
       aos->status = 0;
