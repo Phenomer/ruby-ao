@@ -48,8 +48,6 @@ thread_player(void *val){
     assert(pthread_mutex_lock(&aos->mutex) == 0);
     if (aos->status == 2){
       aos->status = 1;
-      assert(pthread_mutex_unlock(&aos->mutex) == 0);
-      break;
     }
     assert(pthread_mutex_unlock(&aos->mutex) == 0);
   }
