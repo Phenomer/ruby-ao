@@ -113,21 +113,21 @@ close_device(ao_struct *aos){
       free(sample);
     }
     pthread_join(aos->thread, NULL);
-  } else {
-    if (aos->device != NULL){
-      ao_close(aos->device);
-    }
-    if (aos->option != NULL){
-      ao_free_options(aos->option);
-    }
-    if (aos->format != NULL){
-      free_format(aos->format);
-    }
-    aos->device = NULL;
-    aos->option = NULL;
-    aos->format = NULL;
-    aos->queue  = NULL;
   }
+
+  if (aos->device != NULL){
+    ao_close(aos->device);
+  }
+  if (aos->option != NULL){
+    ao_free_options(aos->option);
+  }
+  if (aos->format != NULL){
+    free_format(aos->format);
+  }
+  aos->device = NULL;
+  aos->option = NULL;
+  aos->format = NULL;
+  aos->queue  = NULL;
   return;
 }
 

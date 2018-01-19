@@ -52,23 +52,6 @@ thread_player(void *val){
     assert(pthread_mutex_unlock(&aos->mutex) == 0);
   }
 
-  while ((sample = dequeue(aos)) != NULL){
-    free(sample->buffer);
-    free(sample);
-  }
-  if (aos->device != NULL){
-    ao_close(aos->device);
-  }
-  if (aos->option != NULL){
-    ao_free_options(aos->option);
-  }
-  if (aos->format != NULL){
-    free_format(aos->format);
-  }
-  aos->device = NULL;
-  aos->option = NULL;
-  aos->format = NULL;
-  aos->queue  = NULL;
   assert(pthread_mutex_lock(&aos->mutex) == 0);
   aos->status = -1;
   assert(pthread_mutex_unlock(&aos->mutex) == 0);
