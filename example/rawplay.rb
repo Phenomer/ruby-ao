@@ -12,7 +12,7 @@ require 'audio/output'
 
 ARGV.each{|file|
   if File.file?(file)
-    Audio::LiveOutput.new(bits: 16, rate: 44100, channels: 2,
+    Audio::LiveOutput.new(driver_id: Audio::Info.default_driver_id, bits: 16, rate: 44100, channels: 2,
                           byte_format: Audio::Info::FMT_LITTLE){|ao|
       File.open(file){|f|
         while buffer = f.read(4096)

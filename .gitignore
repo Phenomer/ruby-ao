@@ -1,0 +1,11 @@
+*~
+*.o
+*.so
+*.gem
+*.wav
+*.raw
+*.ogg
+*.mp3
+ext/audio/Makefile
+ext/audio/mkmf.log
+

@@ -4,12 +4,6 @@
 #include <errno.h>
 #include "cao.h"
 
-VALUE cAudio;
-VALUE cAO_Live;
-VALUE cAO_Info;
-VALUE cAO_eDriverError;
-VALUE cAO_eBadFormat;
-
 /*
   ao_info構造体をRubyのHashに変換し返す。
 */

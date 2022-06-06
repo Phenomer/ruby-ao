@@ -1,6 +1,6 @@
 = Ruby-AO(libao Ruby Interface)
 
-* http://bitbucket.org/phenomer/ruby-ao
+* https://github.com/phenomer/ruby-ao
 
 == 概要
 ruby-aoは、シンプルでクロスプラットフォームなオーディオ出力ライブラリ

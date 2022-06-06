@@ -4,21 +4,10 @@
 #include <errno.h>
 #include "cao.h"
 
-VALUE cAudio;
 VALUE cAO_Live;
 VALUE cAO_File;
-VALUE cAO_Info;
 VALUE cAO_Mixer;
 VALUE cAO_DeviceData;
-VALUE cAO_eAOError;
-VALUE cAO_eDeviceError;
-VALUE cAO_eUnknownError;
-
-VALUE cAO_eNoDriver;
-VALUE cAO_eNotFile;
-VALUE cAO_eNotLive;
-VALUE cAO_eBadOption;
-VALUE cAO_eDriverError;
 
 VALUE
 rao_close(VALUE obj)
@@ -82,7 +71,7 @@ Init_outputc(void)
    * 開いたデバイスに関する基本的な情報を保持するクラス。
    * ruby側から操作はしない。
    */
-  cAO_DeviceData = rb_define_class_under(cAO_Live, "DeviceData", rb_cData);
+  cAO_DeviceData = rb_define_class_under(cAO_Live, "DeviceData", rb_cObject);
 
   /* library initialize & shutdown */
   rb_define_private_method(cAO_Live, "initialize", rao_open_live, 8);

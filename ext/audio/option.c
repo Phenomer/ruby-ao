@@ -4,10 +4,6 @@
 #include <errno.h>
 #include "cao.h"
 
-VALUE cAudio;
-VALUE cAO_Info;
-VALUE cAO_eUnknownError;
-
 /*
   引数に設定されたサンプルフォーマットをao_sample_format構造体に設定する。
   成功したらao_sample_format構造体へのポインタを返す。
@@ -17,7 +13,6 @@ set_format(VALUE bits, VALUE rate, VALUE channels,
 	   VALUE byte_format, VALUE matrix)
 {
   ao_sample_format *format;
-  size_t len;
 
   if ((format = malloc(sizeof(ao_sample_format))) == NULL){
     rb_raise(cAO_eUnknownError, "memory allocation failure.");

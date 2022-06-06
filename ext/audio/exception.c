@@ -1,8 +1,5 @@
 #include "cao.h"
 
-VALUE cAudio;
-VALUE cAO_Live;
-VALUE cAO_File;
 VALUE cAO_eAOError;
 VALUE cAO_eNoDriver;
 VALUE cAO_eNotFile;

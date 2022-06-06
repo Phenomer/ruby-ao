@@ -9,7 +9,7 @@ int
 mix_sample_8(sample_t **samples,  sample_t *ret, int chs){
   int32_t sum;
   int ch;
-  int pos;
+  uint32_t pos;
   int8_t *buffer;
   int8_t *src;
 
@@ -31,7 +31,7 @@ int
 mix_sample_16(sample_t **samples, sample_t *ret, int chs){
   int32_t sum;
   int ch;
-  int pos;
+  uint32_t pos;
   int16_t *buffer;
   int16_t *src;
 
@@ -80,7 +80,7 @@ rao_mix_samples(VALUE obj, VALUE bits, VALUE rsamples){
   sample_t ret;
   int stat;
   int chs = 0;
-  int maxlen = 0;
+  uint32_t maxlen = 0;
 
   Check_Type(bits, T_FIXNUM);
   Check_Type(rsamples, T_ARRAY);

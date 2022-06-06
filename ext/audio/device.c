@@ -97,7 +97,6 @@ raodev_play(VALUE obj, VALUE output_samples)
  */
 void
 close_device(ao_struct *aos){
-  int i;
   sample_t *sample;
 
   if (aos->tmode == 1){

@@ -12,7 +12,6 @@
 
 void *
 thread_player(void *val){
-  queue res;
   ao_struct *aos = val;
   sample_t *sample;
   struct timespec tout = {0, 1000000};
